@@ -3,8 +3,8 @@
 # Home Assistant: Wibeee Component
 ![wibeee_logo](https://wibeee.com/wp-content/uploads/2018/09/logo.png)
 
-This is a Home Assistant Custom Component originally developed to integrate CIRCUTOR WiBeee (3 phase)
-energy monitors. It has also been found to work on on similar devices that are listed below:
+This is a Home Assistant Custom Component originally developed to integrate CIRCUTOR Wibeee (3 phase)
+and Mirubee energy monitors. It has been found to work on on similar devices that are listed below:
 
 | Device        | Model           | Link  |
 | ------------- |:-------------:| -----:|
