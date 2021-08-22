@@ -22,8 +22,18 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA,
+    STATE_CLASS_MEASUREMENT,
+    SensorEntity,
+)
+
 from homeassistant.const import (
+    DEVICE_CLASS_CURRENT,
+    DEVICE_CLASS_ENERGY,
+    DEVICE_CLASS_POWER,
+    DEVICE_CLASS_POWER_FACTOR,
+    DEVICE_CLASS_VOLTAGE,
     FREQUENCY_HERTZ,
     POWER_WATT,
     POWER_VOLT_AMPERE,
@@ -47,7 +57,6 @@ ATTRIBUTION = (
 DOMAIN="WIBEEE"
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.entity import Entity
 
 __version__ = '0.0.2'
 
@@ -75,17 +84,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 SCAN_INTERVAL = timedelta(seconds=15)
 
 SENSOR_TYPES = {
-    'vrms': ['Vrms', ELECTRIC_POTENTIAL_VOLT],
-    'irms': ['Irms', ELECTRIC_CURRENT_AMPERE],
-    'frecuencia': ['Frequency', FREQUENCY_HERTZ],
-    'p_activa': ['Active Power', POWER_WATT],
-    'p_reactiva_ind': ['Inductive Reactive Power', 'VArL'],
-    'p_reactiva_cap': ['Capacitive Reactive Power', 'VArC'],
-    'p_aparent': ['Apparent Power', POWER_VOLT_AMPERE],
-    'factor_potencia': ['Power Factor', ''],
-    'energia_activa': ['Active Energy', ENERGY_WATT_HOUR],
-    'energia_reactiva_ind': ['Inductive Reactive Energy', 'VArLh'],
-    'energia_reactiva_cap': ['Capacitive Reactive Energy', 'VArCh']
+    'vrms': ['Vrms', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE],
+    'irms': ['Irms', ELECTRIC_CURRENT_AMPERE, DEVICE_CLASS_CURRENT],
+    'frecuencia': ['Frequency', FREQUENCY_HERTZ, None],
+    'p_activa': ['Active Power', POWER_WATT, DEVICE_CLASS_POWER],
+    'p_reactiva_ind': ['Inductive Reactive Power', 'VArL', DEVICE_CLASS_POWER],
+    'p_reactiva_cap': ['Capacitive Reactive Power', 'VArC', DEVICE_CLASS_POWER],
+    'p_aparent': ['Apparent Power', POWER_VOLT_AMPERE, DEVICE_CLASS_POWER],
+    'factor_potencia': ['Power Factor', '', DEVICE_CLASS_POWER_FACTOR],
+    'energia_activa': ['Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY],
+    'energia_reactiva_ind': ['Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
+    'energia_reactiva_cap': ['Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
 }
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -118,25 +127,28 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     return True
 
 
-class WibeeeSensor(Entity):
+class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, wibeee_data, name, sensor_id, sensor_phase, sensor_name, sensor_value):
+    def __init__(self, wibeee_data, name_prefix, sensor_id, sensor_phase, sensor_name, sensor_value):
         """Initialize the sensor."""
+        friendly_name, unit, device_class = SENSOR_TYPES[sensor_name]
         self._wibeee_data = wibeee_data
         self._entity = sensor_id
-        self._type = name
+        self._name_prefix = name_prefix
         self._sensor_phase = "Phase" + sensor_phase
-        self._sensor_name = SENSOR_TYPES[sensor_name][0].replace(" ", "_")
-        self._unit_of_measurement = SENSOR_TYPES[sensor_name][1]
+        self._sensor_name = friendly_name.replace(" ", "_")
+        self._unit_of_measurement = unit
         self._state = sensor_value
         self._icon = None
+        self._attr_state_class = STATE_CLASS_MEASUREMENT
+        self._attr_device_class = device_class
 
     @property
     def name(self):
         """Return the name of the sensor."""
         # -> friendly_name
-        return self._type + "_" + self._sensor_phase + "_" + self._sensor_name
+        return self._name_prefix + "_" + self._sensor_phase + "_" + self._sensor_name
 
     @property
     def state(self):
