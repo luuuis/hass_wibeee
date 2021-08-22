@@ -1,4 +1,7 @@
 {
     "name": "Wibeee (and Mirubee) energy monitor",
-    "render_readme": true
+    "render_readme": true,
+    "hide_default_branch": true,
+    "zip_release": true,
+    "filename": "hass_wibee.zip"
 }
