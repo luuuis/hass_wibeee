@@ -6,5 +6,6 @@
   "issue_tracker": "https://github.com/luuuis/hass_wibeee/issues",
   "dependencies": [],
   "codeowners": ["@luuuis"],
-  "requirements": []
+  "requirements": [],
+  "iot_class": "local_polling"
 }
