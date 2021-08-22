@@ -24,13 +24,15 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
+    FREQUENCY_HERTZ,
     POWER_WATT,
-    ENERGY_KILO_WATT_HOUR,
+    POWER_VOLT_AMPERE,
+    ELECTRIC_POTENTIAL_VOLT,
+    ELECTRIC_CURRENT_AMPERE,
     ENERGY_WATT_HOUR,
     CONF_HOST,
     CONF_SCAN_INTERVAL,
     CONF_RESOURCE,
-    CONF_METHOD,
     ATTR_ATTRIBUTION
 )
 from homeassistant.exceptions import PlatformNotReady
@@ -73,13 +75,13 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 SCAN_INTERVAL = timedelta(seconds=15)
 
 SENSOR_TYPES = {
-    'vrms': ['Vrms', 'V'],
-    'irms': ['Irms', 'A'],
-    'frecuencia': ['Frequency', 'Hz'],
+    'vrms': ['Vrms', ELECTRIC_POTENTIAL_VOLT],
+    'irms': ['Irms', ELECTRIC_CURRENT_AMPERE],
+    'frecuencia': ['Frequency', FREQUENCY_HERTZ],
     'p_activa': ['Active Power', POWER_WATT],
     'p_reactiva_ind': ['Inductive Reactive Power', 'VArL'],
     'p_reactiva_cap': ['Capacitive Reactive Power', 'VArC'],
-    'p_aparent': ['Apparent Power', 'VA'],
+    'p_aparent': ['Apparent Power', POWER_VOLT_AMPERE],
     'factor_potencia': ['Power Factor', ''],
     'energia_activa': ['Active Energy', ENERGY_WATT_HOUR],
     'energia_reactiva_ind': ['Inductive Reactive Energy', 'VArLh'],
