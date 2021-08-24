@@ -3,9 +3,8 @@
 # Home Assistant: Wibeee Component
 ![wibeee_logo](https://wibeee.com/wp-content/uploads/2018/09/logo.png)
 
-This is a custom component developed original for its integration with Circuitor Wibeee (3 Phases)
-
-This concept has been proved on similar devices that are listed below:
+This is a Home Assistant Custom Component originally developed to integrate CIRCUTOR Wibeee (3 phase)
+and Mirubee energy monitors. It has been found to work on on similar devices that are listed below:
 
 | Device        | Model           | Link  |
 | ------------- |:-------------:| -----:|
@@ -15,33 +14,35 @@ This concept has been proved on similar devices that are listed below:
 
 # How it works
 
-Once the devices are installed and connected to local wireless network, current energy consumption values are exposed in xml format, the URL of the exposed web service is:
+Once the devices are installed and connected to local wireless network, current energy consumption
+values are exposed in XML format at the following resource:
 
 `http://<wibeee_ip>/en/status.xml`
 
-Example XML are listed [here](https://github.com/abacao/hass_wibeee/tree/master/examples) in github repository
-
+Example XML are listed in [examples](./examples).
 
 ## Installation
 
-Use [HACS](https://hacs.xyz) or follow the manual instructions below.
+Use [HACS](https://hacs.xyz) (preferred) or follow the manual instructions below.
 
 ### HACS
 Custom repository installation: 
 1. Open HACS
-2. Go to integrations
-3. On the top right corner, click on the 3 dots and select `Custom repositories`
-4. Add this repo URL `https://github.com/abacao/hass_wibeee` and select `Integration` as category.
-5. Install and follow the instructions of the manual installation from the 2nd bullet point onwards.
+2. Go to Integrations
+3. In the top right corner, click on the 3 dots and select `Custom repositories`
+4. Add this repo URL `https://github.com/luuuis/hass_wibeee` and select `Integration` as the category.
+5. Install and follow the Home Assistant Configuration instructions below.
 
-# Home Assistant manual installation
+### Manual installation
 
-1.- Clone repo into `<hass_folder>/custom_components`
+1. Download `hass_wibeee.zip` from https://github.com/luuuis/hass_wibeee/releases/latest
+2. Unzip into `<hass_folder>/custom_components`
 ```
-git clone https://github.com/abacao/hass_wibeee.git <hass_folder>/custom_components/wibeee
+unzip hass_wibeee.zip -d <hass_folder>/custom_components/wibeee
 ```
 
-2.- Add device to home assistant configuration file configuration.yaml
+# Configuration
+1. Add device to home assistant configuration file configuration.yaml
 
 ```
 sensor:
@@ -49,8 +50,7 @@ sensor:
   host: 192.168.xx.xx
 ```
 
-Optional
-3.- Add new created sensors to groups.yaml
+2. (optional) Add new created sensors to groups.yaml
 
 ```
 supplies_view:
@@ -140,39 +140,7 @@ Possible log levels: info, debug, warn, ...
 
 ![hass_view](https://i.imgur.com/PL3Qr4L.png "Example View in Home Assistant")
 
-## ToDo
-
-There is a new project in Github, a CLI in Python for these devices that may be helpful for future integrations of this custom component:
-https://github.com/fquinto/pywibeee
-
 # Useful links
 
 Home Assistant community
 https://community.home-assistant.io/t/new-integration-energy-monitoring-device-circutor-wibeee/45276
-
-Original creator for this integration
-https://github.com/juanjoSanz/hass_wibeee
-
-## custom_components examples
-
-YR Sensor (async)
-https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/yr/sensor.py
-
-RFLink Sensor (async)
-https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/rflink/sensor.py
-
-Blueprint
-https://github.com/custom-components/blueprint/blob/master/custom_components/blueprint/sensor.py
-
-Youtube Sensor
-https://github.com/custom-components/youtube/blob/master/custom_components/youtube/sensor.py
-
-Linky Energy Sensor
-https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/components/linky/sensor.py
-
-Other
-https://github.com/kstaniek/hass-ampio/blob/master/custom_components/sensor/ampio.py
-https://github.com/custom-components/sensor.versions/blob/master/custom_components/sensor/versions.py
-
-Solax (async)
-https://github.com/squishykid/home-assistant/blob/23ca4160036f26e9ad08729950ae496b0aabecd0/homeassistant/components/solax/sensor.py

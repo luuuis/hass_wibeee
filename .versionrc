@@ -1,0 +1,14 @@
+{
+  "packageFiles": [
+    {
+      "filename": "custom_components/wibeee/manifest.json",
+      "type": "json"
+    }
+  ],
+  "bumpFiles": [
+    {
+      "filename": "custom_components/wibeee/manifest.json",
+      "type": "json"
+    }
+  ]
+}

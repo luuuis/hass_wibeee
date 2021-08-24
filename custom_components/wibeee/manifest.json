@@ -1,0 +1,13 @@
+{
+  "domain": "wibeee",
+  "name": "wibeee",
+  "version": "2.0.1",
+  "documentation": "https://github.com/luuuis/hass_wibeee",
+  "issue_tracker": "https://github.com/luuuis/hass_wibeee/issues",
+  "dependencies": [],
+  "codeowners": [
+    "@luuuis"
+  ],
+  "requirements": [],
+  "iot_class": "local_polling"
+}

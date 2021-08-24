@@ -2,7 +2,7 @@
 Support for Energy consumption Sensors from Circutor via local Web API
 
 Device's website: http://wibeee.circutor.com/
-Documentation: https://github.com/juanjoSanz/hass_wibeee/
+Documentation: https://github.com/luuuis/hass_wibeee/
 
 """
 
@@ -140,7 +140,6 @@ class WibeeeSensor(SensorEntity):
         self._sensor_name = friendly_name.replace(" ", "_")
         self._unit_of_measurement = unit
         self._state = sensor_value
-        self._icon = None
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
 
@@ -156,11 +155,6 @@ class WibeeeSensor(SensorEntity):
         return self._state
 
     @property
-    def icon(self):
-        """Return the icon to use in the frontend, if any."""
-        return self._icon
-
-    @property
     def unit_of_measurement(self):
         """Return the unit the value is expressed in."""
         return self._unit_of_measurement
@@ -169,17 +163,6 @@ class WibeeeSensor(SensorEntity):
     def should_poll(self):
         """No polling needed."""
         return False
-
-    @property
-    def device_state_attributes(self):
-        """Return the state attributes."""
-        state_attr = {ATTR_ATTRIBUTION: ATTRIBUTION}
-        return state_attr
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique ID."""
-        return 
 
 
 class WibeeeData(object):

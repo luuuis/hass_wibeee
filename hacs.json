@@ -1,6 +1,7 @@
 {
-    "name": "Wibeee - abacao",
+    "name": "Wibeee (and Mirubee) energy monitor",
     "render_readme": true,
-    "content_in_root": true,
+    "zip_release": true,
+    "filename": "hass_wibee.zip",
     "homeassistant": "2021.8.8"
 }
