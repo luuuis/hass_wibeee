@@ -1,5 +1,6 @@
 {
     "name": "Wibeee - abacao",
     "render_readme": true,
-    "content_in_root": true
+    "content_in_root": true,
+    "homeassistant": "2021.8.8"
 }
