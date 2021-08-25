@@ -8,13 +8,11 @@ Documentation: https://github.com/luuuis/hass_wibeee/
 
 REQUIREMENTS = ["xmltodict"]
 
-import asyncio
-
+import xml
 import logging
 import voluptuous as vol
 from datetime import timedelta
 
-import aiohttp
 import async_timeout
 
 import requests
@@ -214,6 +212,7 @@ class WibeeeData(object):
     #@Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def fetching_data(self, *_):
         """ Function to fetch REST Data and transform XML to data to DICT format """
+        xml_data = None
         try:
             with async_timeout.timeout(10, loop=self.hass.loop):
                 resp = await self.session.get(self.url_api)
@@ -226,6 +225,8 @@ class WibeeeData(object):
                 self.data = dict_data["response"]
         except Exception as exc:
             _LOGGER.error('Error while getting %s: %s: %s', self.url_api, exc.__class__.__name__, exc, exc_info=True)
+            if isinstance(exc, xml.parsers.expat.ExpatError):
+                _LOGGER.debug('Received XML:\n%s', xml_data)
             return (None)
 
         self.updating_sensors()
