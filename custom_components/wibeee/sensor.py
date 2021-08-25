@@ -19,6 +19,7 @@ import async_timeout
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 import homeassistant.helpers.config_validation as cv
@@ -54,11 +55,9 @@ __version__ = '0.0.2'
 
 _LOGGER = logging.getLogger(__name__)
 
-
 BASE_URL = 'http://{0}:{1}/{2}'
-PORT=80
+PORT = 80
 API_PATH = 'en/status.xml'
-
 
 DOMAIN = 'wibeee_energy'
 DEFAULT_NAME = 'Wibeee Energy Consumption Sensor'
@@ -85,6 +84,7 @@ SENSOR_TYPES = {
     'energia_reactiva_ind': ['Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
     'energia_reactiva_cap': ['Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
 }
+
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the RESTful sensor."""
@@ -158,9 +158,10 @@ class WibeeeSensor(SensorEntity):
 
 class WibeeeData(object):
     """Gets the latest data from Wibeee sensors."""
+
     def __init__(self, hass, sensor_name_suffix, url_api):
         """Initialize the data object."""
-        _LOGGER.debug("Initializating WibeeeData with url:%s", url_api)
+        _LOGGER.debug("Initializing WibeeeData with url: %s", url_api)
 
         self.hass = hass
         self.sensor_name_suffix = sensor_name_suffix
@@ -172,7 +173,6 @@ class WibeeeData(object):
         self.sensors = None
         self.data = None
 
-
     async def set_sensors(self):
         """Make first Get call to Initialize sensor names"""
         try:
@@ -180,8 +180,7 @@ class WibeeeData(object):
                 resp = await self.session.get(self.url_api)
             resp.raise_for_status()
             if resp.status != 200:
-                try_again("{} returned {}".format(self.url_api, resp.status))
-                return(None)
+                return (None)
             else:
                 xml_data = await resp.text()
                 _LOGGER.debug("RAW Response from %s: %s)", self.url_api, xml_data)
@@ -220,18 +219,14 @@ class WibeeeData(object):
                 resp = await self.session.get(self.url_api)
             resp.raise_for_status()
             if resp.status != 200:
-                try_again("{} returned {}".format(self.url_api, resp.status))
                 return(None)
             else:
                 xml_data = await resp.text()
                 dict_data = xmltodict.parse(xml_data)
                 self.data = dict_data["response"]
-        except (requests.exceptions.HTTPError, aiohttp.ClientError, asyncio.TimeoutError, ValueError) as exc:
-            _LOGGER.error('{}: {}'.format(exc.__class__.__name__, str(exc)))
-            return(None)
-        except:
-            _LOGGER.error('unexpected exception for get %s', self.url_api)
-            return(None)
+        except Exception as exc:
+            _LOGGER.error('Error while getting %s: %s: %s', self.url_api, exc.__class__.__name__, exc, exc_info=True)
+            return (None)
 
         self.updating_sensors()
 
