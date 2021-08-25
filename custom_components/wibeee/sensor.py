@@ -194,17 +194,19 @@ class WibeeeData(object):
         # Create tmp sensor array
         tmp_sensors = []
 
-        for key,value in self.data.items():
-          try:
-            _LOGGER.debug("Processing sensor [key:%s] [value:%s]", key, value)  
-            sensor_id = key
-            sensor_phase,sensor_name = key.split("_",1)
-            sensor_phase = sensor_phase.replace("fase","")
-            sensor_value = value
-            _LOGGER.debug("Adding entity [phase:%s][sensor:%s][value:%s]", sensor_phase, sensor_id, sensor_value)
-            tmp_sensors.append(WibeeeSensor(self, self.sensor_name_suffix, sensor_id, sensor_phase, sensor_name,sensor_value))
-          except:
-            _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}")
+        for key, value in self.data.items():
+            if key.startswith("fase"):
+                try:
+                    _LOGGER.debug("Processing sensor [key:%s] [value:%s]", key, value)
+                    sensor_id = key
+                    sensor_phase, sensor_name = key[4:].split("_", 1)
+                    sensor_value = value
+
+                    _LOGGER.debug("Adding entity [phase:%s][sensor:%s][value:%s]", sensor_phase, sensor_id, sensor_value)
+                    if sensor_name in SENSOR_TYPES:
+                        tmp_sensors.append(WibeeeSensor(self, self.sensor_name_suffix, sensor_id, sensor_phase, sensor_name, sensor_value))
+                except:
+                    _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}")
 
         # Add sensors
         self.sensors = tmp_sensors
