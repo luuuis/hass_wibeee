@@ -42,19 +42,11 @@ from homeassistant.const import (
     ENERGY_WATT_HOUR,
     CONF_HOST,
     CONF_SCAN_INTERVAL,
-    CONF_RESOURCE,
-    ATTR_ATTRIBUTION
 )
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.event import async_track_time_interval
 
 import xmltodict
-
-ATTRIBUTION = (
-    "Circutor's energy consumption sensor"
-)
-
-DOMAIN="WIBEEE"
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -72,16 +64,13 @@ DOMAIN = 'wibeee_energy'
 DEFAULT_NAME = 'Wibeee Energy Consumption Sensor'
 DEFAULT_HOST = ''
 DEFAULT_RESOURCE = 'http://{}/en/status.xml'
-DEFAULT_SCAN_INTERVAL = 60
+DEFAULT_SCAN_INTERVAL = timedelta(seconds=15)
 DEFAULT_PHASES = 3
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
-    vol.Optional(CONF_RESOURCE, default=DEFAULT_RESOURCE): cv.string,
-    vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.positive_int,
+    vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
 })
-
-SCAN_INTERVAL = timedelta(seconds=15)
 
 SENSOR_TYPES = {
     'vrms': ['Vrms', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE],
@@ -111,7 +100,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     # Then make first call and get sensors
     await wibeee_data.set_sensors()
 
-    async_track_time_interval(hass, wibeee_data.fetching_data, SCAN_INTERVAL)
+    scan_interval = config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    _LOGGER.info(f"Start polling {url_api} with scan_interval: {scan_interval}")
+    async_track_time_interval(hass, wibeee_data.fetching_data, scan_interval)
 
     # Add Entities
     if not wibeee_data.sensors:

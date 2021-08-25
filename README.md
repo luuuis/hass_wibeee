@@ -58,11 +58,25 @@ of the energy monitor on your network.
 sensor:
 - platform: wibeee
   host: 192.168.xx.xx # use static IP
+  scan_interval: 5    # optional, defaults to 15 seconds
 ```
 
 Optionally, configure extra template sensors for grid consumption and feed-in to use
 with [Home Energy Management](https://www.home-assistant.io/home-energy-management/). See [SENSOR_EXAMPLES.md](./SENSOR_EXAMPLES.md)
 for suggested sensors that will help you get the most out of the integration.  
+
+### Logging
+
+To set up the logger for this custom component add following lines to configuration.yaml
+
+```yaml
+logger:
+  default: warn
+  logs:
+    custom_components.wibeee.sensor: info
+```
+
+Possible log levels: `info`, `debug`, `warn`, `error`.
 
 # Example View in Home Assistant
 
@@ -71,4 +85,4 @@ for suggested sensors that will help you get the most out of the integration.
 # Useful links
 
 Home Assistant Community thread:
-https://community.home-assistant.io/t/new-integration-energy-monitoring-device-circutor-wibeee/45276
+https://community.home-assistant.io/t/new-integration-energy-monitoring-device-circutor-wibeee/45276/176
