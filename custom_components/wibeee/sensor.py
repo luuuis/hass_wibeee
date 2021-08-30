@@ -14,8 +14,6 @@ import logging
 import voluptuous as vol
 from datetime import timedelta
 
-import async_timeout
-
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
@@ -43,6 +41,7 @@ from homeassistant.const import (
     CONF_HOST,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
+    STATE_UNAVAILABLE,
 )
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.event import async_track_time_interval
@@ -107,12 +106,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     _LOGGER.debug(f"Start polling {url_api} with scan_interval: {scan_interval}")
     async_track_time_interval(hass, wibeee_data.fetching_data, scan_interval)
 
-    # Add Entities
-    if not wibeee_data.sensors:
-        raise PlatformNotReady
-    if not wibeee_data.data:
-        raise PlatformNotReady
-
     async_add_entities(wibeee_data.sensors, True)
 
     # Setup Completed
@@ -134,6 +127,7 @@ class WibeeeSensor(SensorEntity):
         self._sensor_name = friendly_name.replace(" ", "_")
         self._unit_of_measurement = unit
         self._state = sensor_value
+        self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
 
@@ -177,8 +171,6 @@ class WibeeeData(object):
         self.session = async_get_clientsession(hass)
 
         self.sensors = None
-        self.data = None
-        self.ready = asyncio.Event()
 
     async def async_fetch_status(self, retries=0):
         """Fetches the status XML from Wibeee as a dict, optionally retries"""
@@ -209,7 +201,7 @@ class WibeeeData(object):
                 if try_n == retries:
                     retry_info = f' after {try_n} retries' if retries > 0 else ''
                     _LOGGER.error('Error getting %s%s: %s: %s', self.url_api, retry_info, exc.__class__.__name__, exc, exc_info=True)
-                    raise
+                    return {}
                 else:
                     _LOGGER.warning('Error getting %s, will retry. %s: %s', self.url_api, exc.__class__.__name__, exc, exc_info=True)
                     return await fetch_with_retries(try_n=try_n + 1)
@@ -218,12 +210,12 @@ class WibeeeData(object):
 
     async def set_sensors(self):
         """Make first Get call to Initialize sensor names"""
-        self.data = await self.async_fetch_status(retries=10)
+        fetched = await self.async_fetch_status(retries=10)
 
         # Create tmp sensor array
         tmp_sensors = []
 
-        for key, value in self.data.items():
+        for key, value in fetched.items():
             if key.startswith("fase"):
                 try:
                     _LOGGER.debug("Processing sensor [key:%s] [value:%s]", key, value)
@@ -243,24 +235,18 @@ class WibeeeData(object):
     async def fetching_data(self, now=None):
         """ Function to fetch REST Data and transform XML to data to DICT format """
         try:
-            self.data = await self.async_fetch_status(retries=3)
+            fetched = await self.async_fetch_status(retries=3)
         except Exception as err:
-            if now is not None:
-                self.ready.clear()
-                return
-            raise PlatformNotReady from err
+            fetched = {}
+            if now is None:
+                raise PlatformNotReady from err
 
-        self.updating_sensors()
+        self.updating_sensors(sensor_data=fetched)
 
-    def updating_sensors(self, *_):
-        """Find the current data from self.data."""
-        if not self.data:
-            return
-
-        # Update all sensors
+    def updating_sensors(self, sensor_data):
+        """Update all sensor states from sensor_data."""
         for sensor in self.sensors:
-            new_state = None
-            if self.data[sensor._entity]:
-                sensor._state = self.data[sensor._entity]
-                sensor.async_schedule_update_ha_state()
-                _LOGGER.debug("[sensor:%s] %s)", sensor._entity, sensor._state)
+            sensor._state = sensor_data.get(sensor._entity, STATE_UNAVAILABLE)
+            sensor._attr_available = sensor._state is not STATE_UNAVAILABLE
+            sensor.async_schedule_update_ha_state()
+            _LOGGER.debug("[sensor:%s] %s)", sensor._entity, sensor._state)
