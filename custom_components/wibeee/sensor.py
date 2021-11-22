@@ -15,6 +15,7 @@ import voluptuous as vol
 from datetime import timedelta
 
 import requests
+# noinspection PyUnresolvedReferences
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -41,6 +42,7 @@ from homeassistant.const import (
     CONF_HOST,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
+    CONF_UNIQUE_ID,
     STATE_UNAVAILABLE,
 )
 from homeassistant.exceptions import PlatformNotReady
@@ -70,6 +72,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.time_period,
+    vol.Optional(CONF_UNIQUE_ID, default=True): cv.boolean
 })
 
 SENSOR_TYPES = {
@@ -93,17 +96,17 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     sensor_name_suffix = "wibeee"
     host = config.get(CONF_HOST)
-    url_api = BASE_URL.format(host, PORT, API_PATH)
 
     # Create a WIBEEE DATA OBJECT
     scan_interval = config.get(CONF_SCAN_INTERVAL)
     timeout = config.get(CONF_TIMEOUT)
-    wibeee_data = WibeeeData(hass, sensor_name_suffix, url_api, scan_interval, timeout)
+    unique_id = config.get(CONF_UNIQUE_ID)
+    wibeee_data = WibeeeData(hass, sensor_name_suffix, host, unique_id, scan_interval, timeout)
 
     # Then make first call and get sensors
     await wibeee_data.set_sensors()
 
-    _LOGGER.debug(f"Start polling {url_api} with scan_interval: {scan_interval}")
+    _LOGGER.debug(f"Start polling {host} with scan_interval: {scan_interval}")
     async_track_time_interval(hass, wibeee_data.fetching_data, scan_interval)
 
     async_add_entities(wibeee_data.sensors, True)
@@ -117,9 +120,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, wibeee_data, name_prefix, sensor_id, sensor_phase, sensor_name, sensor_value):
+    def __init__(self, wibeee_data, name_prefix, mac_addr, sensor_id, sensor_phase, sensor_name, sensor_value):
         """Initialize the sensor."""
         friendly_name, unit, device_class = SENSOR_TYPES[sensor_name]
+        self._uid = f'wibeee_{mac_addr}_{sensor_name}_{sensor_phase}' if mac_addr else None
         self._wibeee_data = wibeee_data
         self._entity = sensor_id
         self._name_prefix = name_prefix
@@ -130,6 +134,11 @@ class WibeeeSensor(SensorEntity):
         self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._uid
 
     @property
     def name(self):
@@ -156,16 +165,17 @@ class WibeeeSensor(SensorEntity):
 class WibeeeData(object):
     """Gets the latest data from Wibeee sensors."""
 
-    def __init__(self, hass, sensor_name_suffix, url_api, scan_interval, timeout):
+    def __init__(self, hass, sensor_name_suffix, host, unique_id, scan_interval, timeout):
         """Initialize the data object."""
 
         self.hass = hass
         self.sensor_name_suffix = sensor_name_suffix
-        self.url_api = url_api
+        self.host = host
+        self.unique_id = unique_id
         self.timeout = min(timeout, scan_interval)
         self.min_wait = timedelta(milliseconds=100)
         self.max_wait = min(timedelta(seconds=5), scan_interval)
-        _LOGGER.info("Initializing WibeeeData with url: %s, scan_interval: %s, timeout %s, max_wait: %s", url_api, scan_interval,
+        _LOGGER.info("Initializing WibeeeData with host: %s, scan_interval: %s, timeout %s, max_wait: %s", host, scan_interval,
                      self.timeout, self.max_wait)
 
         self.session = async_get_clientsession(hass)
@@ -174,15 +184,30 @@ class WibeeeData(object):
 
     async def async_fetch_status(self, retries=0):
         """Fetches the status XML from Wibeee as a dict, optionally retries"""
+        status = await self.async_fetch_url(f'http://{self.host}/en/status.xml', retries)
+        return status["response"]
 
+    async def async_fetch_mac_addr(self, retries):
+        if self.unique_id is False:
+            return None
+
+        try:
+            # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
+            response = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var=WIBEEE.macAddr', retries)
+            return response['values']['variable']['value']
+        except Exception:
+            _LOGGER.warning("Error getting MAC address, sensors will not have a unique ID", exc_info=True)
+            return None
+
+    async def async_fetch_url(self, url, retries=0):
         async def fetch_with_retries(try_n):
             if try_n > 0:
                 wait = min(pow(2, try_n) * self.min_wait.total_seconds(), self.max_wait.total_seconds())
-                _LOGGER.debug("Waiting %0.3fs to retry %s...", wait, self.url_api)
+                _LOGGER.debug("Waiting %0.3fs to retry %s...", wait, url)
                 await asyncio.sleep(wait)
 
             try:
-                resp = await self.session.get(self.url_api, timeout=self.timeout.total_seconds())
+                resp = await self.session.get(url, timeout=self.timeout.total_seconds())
                 if resp.status != 200:
                     raise aiohttp.ClientResponseError(
                         resp.request_info,
@@ -193,29 +218,30 @@ class WibeeeData(object):
                     )
 
                 xml_data = await resp.text()
-                _LOGGER.debug("RAW Response from %s: %s)", self.url_api, xml_data)
-                dict_data = xmltodict.parse(xml_data)
-                return dict_data["response"]
+                _LOGGER.debug("RAW Response from %s: %s)", url, xml_data)
+                xml_as_dict = xmltodict.parse(xml_data)
+                return xml_as_dict
 
             except Exception as exc:
                 if try_n == retries:
                     retry_info = f' after {try_n} retries' if retries > 0 else ''
-                    _LOGGER.error('Error getting %s%s: %s: %s', self.url_api, retry_info, exc.__class__.__name__, exc, exc_info=True)
+                    _LOGGER.error('Error getting %s%s: %s: %s', url, retry_info, exc.__class__.__name__, exc, exc_info=True)
                     return {}
                 else:
-                    _LOGGER.warning('Error getting %s, will retry. %s: %s', self.url_api, exc.__class__.__name__, exc, exc_info=True)
-                    return await fetch_with_retries(try_n=try_n + 1)
+                    _LOGGER.warning('Error getting %s, will retry. %s: %s', url, exc.__class__.__name__, exc, exc_info=True)
+                    return await fetch_with_retries(try_n + 1)
 
-        return await fetch_with_retries(try_n=0)
+        return await fetch_with_retries(0)
 
     async def set_sensors(self):
         """Make first Get call to Initialize sensor names"""
-        fetched = await self.async_fetch_status(retries=10)
+        status = await self.async_fetch_status(retries=10)
+        mac_addr = await self.async_fetch_mac_addr(retries=5)
 
         # Create tmp sensor array
         tmp_sensors = []
 
-        for key, value in fetched.items():
+        for key, value in status.items():
             if key.startswith("fase"):
                 try:
                     _LOGGER.debug("Processing sensor [key:%s] [value:%s]", key, value)
@@ -225,7 +251,8 @@ class WibeeeData(object):
 
                     _LOGGER.debug("Adding entity [phase:%s][sensor:%s][value:%s]", sensor_phase, sensor_id, sensor_value)
                     if sensor_name in SENSOR_TYPES:
-                        tmp_sensors.append(WibeeeSensor(self, self.sensor_name_suffix, sensor_id, sensor_phase, sensor_name, sensor_value))
+                        tmp_sensors.append(
+                            WibeeeSensor(self, self.sensor_name_suffix, mac_addr, sensor_id, sensor_phase, sensor_name, sensor_value))
                 except:
                     _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}")
 
