@@ -76,17 +76,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 SENSOR_TYPES = {
-    'vrms': ['Vrms', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE],
-    'irms': ['Irms', ELECTRIC_CURRENT_AMPERE, DEVICE_CLASS_CURRENT],
-    'frecuencia': ['Frequency', FREQUENCY_HERTZ, None],
-    'p_activa': ['Active Power', POWER_WATT, DEVICE_CLASS_POWER],
-    'p_reactiva_ind': ['Inductive Reactive Power', 'VArL', DEVICE_CLASS_POWER],
-    'p_reactiva_cap': ['Capacitive Reactive Power', 'VArC', DEVICE_CLASS_POWER],
-    'p_aparent': ['Apparent Power', POWER_VOLT_AMPERE, DEVICE_CLASS_POWER],
-    'factor_potencia': ['Power Factor', '', DEVICE_CLASS_POWER_FACTOR],
-    'energia_activa': ['Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY],
-    'energia_reactiva_ind': ['Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
-    'energia_reactiva_cap': ['Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
+    'vrms': ['Vrms', 'Phase Voltage', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE],
+    'irms': ['Irms', 'Current', ELECTRIC_CURRENT_AMPERE, DEVICE_CLASS_CURRENT],
+    'frecuencia': ['Frequency', 'Frequency', FREQUENCY_HERTZ, None],
+    'p_activa': ['Active_Power', 'Active Power', POWER_WATT, DEVICE_CLASS_POWER],
+    'p_reactiva_ind': ['Inductive_Reactive_Power', 'Inductive Reactive Power', 'VArL', DEVICE_CLASS_POWER],
+    'p_reactiva_cap': ['Capacitive_Reactive_Power', 'Capacitive Reactive Power', 'VArC', DEVICE_CLASS_POWER],
+    'p_aparent': ['Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, DEVICE_CLASS_POWER],
+    'factor_potencia': ['Power_Factor', 'Power Factor', '', DEVICE_CLASS_POWER_FACTOR],
+    'energia_activa': ['Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY],
+    'energia_reactiva_ind': ['Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
+    'energia_reactiva_cap': ['Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
 }
 
 
@@ -94,14 +94,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     """Set up the RESTful sensor."""
     _LOGGER.debug("Setting up Wibeee Sensors...")
 
-    sensor_name_suffix = "wibeee"
     host = config.get(CONF_HOST)
 
     # Create a WIBEEE DATA OBJECT
     scan_interval = config.get(CONF_SCAN_INTERVAL)
     timeout = config.get(CONF_TIMEOUT)
     unique_id = config.get(CONF_UNIQUE_ID)
-    wibeee_data = WibeeeData(hass, sensor_name_suffix, host, unique_id, scan_interval, timeout)
+    wibeee_data = WibeeeData(hass, host, unique_id, scan_interval, timeout)
 
     # Then make first call and get sensors
     await wibeee_data.set_sensors()
@@ -120,31 +119,21 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, wibeee_data, name_prefix, mac_addr, sensor_id, sensor_phase, sensor_name, sensor_value):
+    def __init__(self, wibeee_data, mac_addr, sensor_id, sensor_phase, status_xml_name, sensor_value):
         """Initialize the sensor."""
-        friendly_name, unit, device_class = SENSOR_TYPES[sensor_name]
-        self._uid = f'wibeee_{mac_addr}_{sensor_name}_{sensor_phase}' if mac_addr else None
+        ha_name, friendly_name, unit, device_class = SENSOR_TYPES[status_xml_name]
         self._wibeee_data = wibeee_data
         self._entity = sensor_id
-        self._name_prefix = name_prefix
-        self._sensor_phase = "Phase" + sensor_phase
-        self._sensor_name = friendly_name.replace(" ", "_")
         self._unit_of_measurement = unit
         self._state = sensor_value
         self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique ID."""
-        return self._uid
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        # -> friendly_name
-        return self._name_prefix + "_" + self._sensor_phase + "_" + self._sensor_name
+        if mac_addr:
+            self._attr_unique_id = f"wibeee_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
+            self._attr_name = f"Wibeee {mac_addr.upper()} {friendly_name} L{sensor_phase}"
+        else:
+            self._attr_name = f"wibeee_Phase{sensor_phase}_{ha_name}"
 
     @property
     def state(self):
@@ -165,11 +154,10 @@ class WibeeeSensor(SensorEntity):
 class WibeeeData(object):
     """Gets the latest data from Wibeee sensors."""
 
-    def __init__(self, hass, sensor_name_suffix, host, unique_id, scan_interval, timeout):
+    def __init__(self, hass, host, unique_id, scan_interval, timeout):
         """Initialize the data object."""
 
         self.hass = hass
-        self.sensor_name_suffix = sensor_name_suffix
         self.host = host
         self.unique_id = unique_id
         self.timeout = min(timeout, scan_interval)
@@ -188,13 +176,11 @@ class WibeeeData(object):
         return status["response"]
 
     async def async_fetch_mac_addr(self, retries):
-        if self.unique_id is False:
-            return None
-
         try:
             # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
             response = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var=WIBEEE.macAddr', retries)
-            return response['values']['variable']['value']
+            value = response['values']['variable']['value']
+            return value.replace(":", "").lower() if value else None
         except Exception:
             _LOGGER.warning("Error getting MAC address, sensors will not have a unique ID", exc_info=True)
             return None
@@ -236,7 +222,7 @@ class WibeeeData(object):
     async def set_sensors(self):
         """Make first Get call to Initialize sensor names"""
         status = await self.async_fetch_status(retries=10)
-        mac_addr = await self.async_fetch_mac_addr(retries=5)
+        mac_addr = await self.async_fetch_mac_addr(retries=5) if self.unique_id else None
 
         # Create tmp sensor array
         tmp_sensors = []
@@ -249,10 +235,10 @@ class WibeeeData(object):
                     sensor_phase, sensor_name = key[4:].split("_", 1)
                     sensor_value = value
 
-                    _LOGGER.debug("Adding entity [phase:%s][sensor:%s][value:%s]", sensor_phase, sensor_id, sensor_value)
                     if sensor_name in SENSOR_TYPES:
-                        tmp_sensors.append(
-                            WibeeeSensor(self, self.sensor_name_suffix, mac_addr, sensor_id, sensor_phase, sensor_name, sensor_value))
+                        sensor = WibeeeSensor(self, mac_addr, sensor_id, sensor_phase, sensor_name, sensor_value)
+                        _LOGGER.debug("Adding entity '%s' (uid=%s)", sensor.name, sensor.unique_id)
+                        tmp_sensors.append(sensor)
                 except:
                     _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}")
 
