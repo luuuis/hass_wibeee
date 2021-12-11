@@ -259,7 +259,8 @@ class WibeeeData(object):
     def updating_sensors(self, sensor_data):
         """Update all sensor states from sensor_data."""
         for sensor in self.sensors:
-            sensor._state = sensor_data.get(sensor._entity, STATE_UNAVAILABLE)
-            sensor._attr_available = sensor._state is not STATE_UNAVAILABLE
-            sensor.async_schedule_update_ha_state()
-            _LOGGER.debug("[sensor:%s] %s)", sensor._entity, sensor._state)
+            if sensor.enabled:
+                sensor._state = sensor_data.get(sensor._entity, STATE_UNAVAILABLE)
+                sensor._attr_available = sensor._state is not STATE_UNAVAILABLE
+                sensor.async_schedule_update_ha_state()
+            _LOGGER.debug("[sensor:%s] %s%s", sensor._entity, sensor._state, '' if sensor.enabled else ' (DISABLED)')
