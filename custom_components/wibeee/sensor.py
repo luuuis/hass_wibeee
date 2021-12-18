@@ -13,7 +13,9 @@ import asyncio
 import logging
 import voluptuous as vol
 from datetime import timedelta
+from urllib.parse import quote_plus
 
+from homeassistant.util import slugify
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -106,36 +108,22 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, wibeee_data, mac_addr, sensor_id, sensor_phase, status_xml_name, sensor_value):
+    def __init__(self, wibeee_data, device, sensor_id, sensor_phase, status_xml_name, sensor_value):
         """Initialize the sensor."""
         ha_name, friendly_name, unit, device_class = SENSOR_TYPES[status_xml_name]
+        [device_name, mac_addr] = [device['id'], device['mac_addr']] if device else ["Wibeee", None]
+        entity_id = slugify(f"Wibeee {mac_addr} {friendly_name} L{sensor_phase}" if mac_addr else f"wibeee_Phase{sensor_phase}_{ha_name}")
         self._wibeee_data = wibeee_data
         self._entity = sensor_id
         self._unit_of_measurement = unit
-        self._state = sensor_value
+        self._attr_state = sensor_value
         self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
-        if mac_addr:
-            self._attr_unique_id = f"wibeee_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
-            self._attr_name = f"Wibeee {mac_addr.upper()} {friendly_name} L{sensor_phase}"
-        else:
-            self._attr_name = f"wibeee_Phase{sensor_phase}_{ha_name}"
-
-    @property
-    def state(self):
-        """Return the state of the device."""
-        return self._state
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit the value is expressed in."""
-        return self._unit_of_measurement
-
-    @property
-    def should_poll(self):
-        """No polling needed."""
-        return False
+        self._attr_unique_id = f"wibeee_{mac_addr}_{ha_name.lower()}_{sensor_phase}" if mac_addr else None
+        self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
+        self._attr_should_poll = False
+        self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name
 
 
 class WibeeeData(object):
@@ -162,14 +150,17 @@ class WibeeeData(object):
         status = await self.async_fetch_url(f'http://{self.host}/en/status.xml', retries)
         return status["response"]
 
-    async def async_fetch_mac_addr(self, retries):
+    async def async_fetch_device_info(self, retries):
         try:
+            # <devices><id>WIBEEE</id></devices>
+            devices = await self.async_fetch_url(f'http://{self.host}/services/user/devices.xml', retries)
+            device_id = devices['devices']['id']
             # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
-            response = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var=WIBEEE.macAddr', retries)
-            value = response['values']['variable']['value']
-            return value.replace(":", "").lower() if value else None
+            values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var={quote_plus(device_id)}.macAddr', retries)
+            mac_addr = values['values']['variable']['value']
+            return dict(id=device_id, mac_addr=mac_addr.replace(":", "").lower()) if device_id and mac_addr else None
         except Exception:
-            _LOGGER.warning("Error getting MAC address, sensors will not have a unique ID", exc_info=True)
+            _LOGGER.warning("Error getting device info, sensors will not have a unique ID", exc_info=True)
             return None
 
     async def async_fetch_url(self, url, retries=0):
@@ -208,8 +199,8 @@ class WibeeeData(object):
 
     async def set_sensors(self):
         """Make first Get call to Initialize sensor names"""
+        device = await self.async_fetch_device_info(retries=5) if self.unique_id else None
         status = await self.async_fetch_status(retries=10)
-        mac_addr = await self.async_fetch_mac_addr(retries=5) if self.unique_id else None
 
         # Create tmp sensor array
         tmp_sensors = []
@@ -223,11 +214,11 @@ class WibeeeData(object):
                     sensor_value = value
 
                     if sensor_name in SENSOR_TYPES:
-                        sensor = WibeeeSensor(self, mac_addr, sensor_id, sensor_phase, sensor_name, sensor_value)
+                        sensor = WibeeeSensor(self, device, sensor_id, sensor_phase, sensor_name, sensor_value)
                         _LOGGER.debug("Adding entity '%s' (uid=%s)", sensor.name, sensor.unique_id)
                         tmp_sensors.append(sensor)
                 except:
-                    _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}")
+                    _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}", exc_info=True)
 
         # Add sensors
         self.sensors = tmp_sensors
@@ -247,7 +238,7 @@ class WibeeeData(object):
         """Update all sensor states from sensor_data."""
         for sensor in self.sensors:
             if sensor.enabled:
-                sensor._state = sensor_data.get(sensor._entity, STATE_UNAVAILABLE)
-                sensor._attr_available = sensor._state is not STATE_UNAVAILABLE
+                sensor._attr_state = sensor_data.get(sensor._entity, STATE_UNAVAILABLE)
+                sensor._attr_available = sensor.state is not STATE_UNAVAILABLE
                 sensor.async_schedule_update_ha_state()
-            _LOGGER.debug("[sensor:%s] %s%s", sensor._entity, sensor._state, '' if sensor.enabled else ' (DISABLED)')
+            _LOGGER.debug("[sensor:%s] %s%s", sensor._entity, sensor.state, '' if sensor.enabled else ' (DISABLED)')
