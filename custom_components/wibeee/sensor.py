@@ -14,12 +14,6 @@ import logging
 import voluptuous as vol
 from datetime import timedelta
 
-import requests
-# noinspection PyUnresolvedReferences
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -56,17 +50,10 @@ __version__ = '0.0.2'
 
 _LOGGER = logging.getLogger(__name__)
 
-BASE_URL = 'http://{0}:{1}/{2}'
-PORT = 80
-API_PATH = 'en/status.xml'
-
-DOMAIN = 'wibeee_energy'
 DEFAULT_NAME = 'Wibeee Energy Consumption Sensor'
 DEFAULT_HOST = ''
-DEFAULT_RESOURCE = 'http://{}/en/status.xml'
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=15)
 DEFAULT_TIMEOUT = timedelta(seconds=10)
-DEFAULT_PHASES = 3
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
