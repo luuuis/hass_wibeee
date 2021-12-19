@@ -8,23 +8,24 @@ Integrates CIRCUTOR Wibeee/Mirubeee energy monitoring devices into Home Assistan
 with single and three-phase versions.
 
 ### Sensors
-Provides the following sensors, one for each phase (`Phase1` shown below).
 
-| Sensor                                     | Unit  | Description       |
-| -------------------------------------------|:------:|------------------|
-| `wibeee_phase1_active_energy`              | Wh    | Active Energy |
-| `wibeee_phase1_active_power`               | W     | Active Power |
-| `wibeee_phase1_apparent_power`             | VA    | Apparent Power |
-| `wibeee_phase1_capacitive_reactive_energy` | VArCh | Capacitive Reactive Energy |
-| `wibeee_phase1_capacitive_reactive_power`  | VArC  | Capacitive Reactive Power |
-| `wibeee_phase1_frequency`                  | Hz    | Frequency |
-| `wibeee_phase1_inductive_reactive_energy`  | VArLh | Inductive Reactive Energy |
-| `wibeee_phase1_inductive_reactive_power`   | VArL  | Inductive Reactive Power |
-| `wibeee_phase1_irms`                       | A     | Current |
-| `wibeee_phase1_power_factor`               | PF    | Power Factor |
-| `wibeee_phase1_vrms`                       | V     | Phase Voltage |
+Provides the following sensors, one for each clamp using `_L1`/`_L2`/`_L3` suffixes.
 
-In three-phased devices `Phase4` sensors contain the total readings across all three phases.
+| Sensor                                         | Unit  | Description       |
+| -----------------------------------------------|:------:|------------------|
+| `wibeee_<mac_addr>_active_energy`              | Wh    | Active Energy |
+| `wibeee_<mac_addr>_active_power`               | W     | Active Power |
+| `wibeee_<mac_addr>_apparent_power`             | VA    | Apparent Power |
+| `wibeee_<mac_addr>_capacitive_reactive_energy` | VArCh | Capacitive Reactive Energy |
+| `wibeee_<mac_addr>_capacitive_reactive_power`  | VArC  | Capacitive Reactive Power |
+| `wibeee_<mac_addr>_frequency`                  | Hz    | Frequency |
+| `wibeee_<mac_addr>_inductive_reactive_energy`  | VArLh | Inductive Reactive Energy |
+| `wibeee_<mac_addr>_inductive_reactive_power`   | VArL  | Inductive Reactive Power |
+| `wibeee_<mac_addr>_current`                    | A     | Current |
+| `wibeee_<mac_addr>_power_factor`               | PF    | Power Factor |
+| `wibeee_<mac_addr>_phase_voltage`              | V     | Phase Voltage |
+
+In three-phase devices the `_L4` sensors contain the total readings across all phases.
 
 ## Installation
 
@@ -56,8 +57,10 @@ of the energy monitor on your network.
 ```yaml
 sensor:
 - platform: wibeee
-  host: 192.168.xx.xx # use static IP
-  scan_interval: 15   # optional, defaults to 15 seconds
+  host: 192.168.1.xx # use static IP
+  scan_interval: 15  # optional, defaults to 15 seconds
+- platform: wibeee
+  host: 192.168.1.yy # add a second device
 ```
 
 Optionally, configure extra template sensors for grid consumption and feed-in to use
