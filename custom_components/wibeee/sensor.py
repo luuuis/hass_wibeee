@@ -114,8 +114,8 @@ class WibeeeSensor(SensorEntity):
         [device_name, mac_addr] = [device['id'], device['mac_addr']] if device else ["Wibeee", None]
         entity_id = slugify(f"Wibeee {mac_addr} {friendly_name} L{sensor_phase}" if mac_addr else f"wibeee_Phase{sensor_phase}_{ha_name}")
         self._wibeee_data = wibeee_data
-        self._entity = sensor_id
-        self._unit_of_measurement = unit
+        self._sensor_id = sensor_id
+        self._attr_unit_of_measurement = unit
         self._attr_state = sensor_value
         self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
@@ -208,14 +208,13 @@ class WibeeeData(object):
         for key, value in status.items():
             if key.startswith("fase"):
                 try:
-                    _LOGGER.debug("Processing sensor [key:%s] [value:%s]", key, value)
                     sensor_id = key
                     sensor_phase, sensor_name = key[4:].split("_", 1)
                     sensor_value = value
 
                     if sensor_name in SENSOR_TYPES:
                         sensor = WibeeeSensor(self, device, sensor_id, sensor_phase, sensor_name, sensor_value)
-                        _LOGGER.debug("Adding entity '%s' (uid=%s)", sensor.name, sensor.unique_id)
+                        _LOGGER.debug("Adding '%s' (unique_id=%s)", sensor.name, sensor)
                         tmp_sensors.append(sensor)
                 except:
                     _LOGGER.error(f"Unable to create WibeeeSensor Entities for key {key} and value {value}", exc_info=True)
@@ -238,7 +237,7 @@ class WibeeeData(object):
         """Update all sensor states from sensor_data."""
         for sensor in self.sensors:
             if sensor.enabled:
-                sensor._attr_state = sensor_data.get(sensor._entity, STATE_UNAVAILABLE)
+                sensor._attr_state = sensor_data.get(sensor._sensor_id, STATE_UNAVAILABLE)
                 sensor._attr_available = sensor.state is not STATE_UNAVAILABLE
                 sensor.async_schedule_update_ha_state()
-            _LOGGER.debug("[sensor:%s] %s%s", sensor._entity, sensor.state, '' if sensor.enabled else ' (DISABLED)')
+                _LOGGER.debug("Updating '%s'", sensor)
