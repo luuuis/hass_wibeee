@@ -114,7 +114,7 @@ class WibeeeSensor(SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_native_value = sensor_value
         self._attr_available = True
-        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING if device_class is SensorDeviceClass.ENERGY else SensorStateClass.MEASUREMENT
         self._attr_device_class = device_class
         self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}" if mac_addr else None
         self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
