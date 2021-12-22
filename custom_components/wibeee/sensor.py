@@ -20,15 +20,11 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
     STATE_CLASS_MEASUREMENT,
+    SensorDeviceClass,
     SensorEntity,
 )
 
 from homeassistant.const import (
-    DEVICE_CLASS_CURRENT,
-    DEVICE_CLASS_ENERGY,
-    DEVICE_CLASS_POWER,
-    DEVICE_CLASS_POWER_FACTOR,
-    DEVICE_CLASS_VOLTAGE,
     FREQUENCY_HERTZ,
     POWER_WATT,
     POWER_VOLT_AMPERE,
@@ -65,17 +61,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 SENSOR_TYPES = {
-    'vrms': ['Vrms', 'Phase Voltage', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE],
-    'irms': ['Irms', 'Current', ELECTRIC_CURRENT_AMPERE, DEVICE_CLASS_CURRENT],
-    'frecuencia': ['Frequency', 'Frequency', FREQUENCY_HERTZ, None],
-    'p_activa': ['Active_Power', 'Active Power', POWER_WATT, DEVICE_CLASS_POWER],
-    'p_reactiva_ind': ['Inductive_Reactive_Power', 'Inductive Reactive Power', 'VArL', DEVICE_CLASS_POWER],
-    'p_reactiva_cap': ['Capacitive_Reactive_Power', 'Capacitive Reactive Power', 'VArC', DEVICE_CLASS_POWER],
-    'p_aparent': ['Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, DEVICE_CLASS_POWER],
-    'factor_potencia': ['Power_Factor', 'Power Factor', '', DEVICE_CLASS_POWER_FACTOR],
-    'energia_activa': ['Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY],
-    'energia_reactiva_ind': ['Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
-    'energia_reactiva_cap': ['Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
+    'vrms': ['Vrms', 'Phase Voltage', ELECTRIC_POTENTIAL_VOLT, SensorDeviceClass.VOLTAGE],
+    'irms': ['Irms', 'Current', ELECTRIC_CURRENT_AMPERE, SensorDeviceClass.CURRENT],
+    'frecuencia': ['Frequency', 'Frequency', FREQUENCY_HERTZ, SensorDeviceClass.FREQUENCY],
+    'p_activa': ['Active_Power', 'Active Power', POWER_WATT, SensorDeviceClass.POWER],
+    'p_reactiva_ind': ['Inductive_Reactive_Power', 'Inductive Reactive Power', 'VArL', SensorDeviceClass.POWER],
+    'p_reactiva_cap': ['Capacitive_Reactive_Power', 'Capacitive Reactive Power', 'VArC', SensorDeviceClass.POWER],
+    'p_aparent': ['Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, SensorDeviceClass.POWER],
+    'factor_potencia': ['Power_Factor', 'Power Factor', '', SensorDeviceClass.POWER_FACTOR],
+    'energia_activa': ['Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY],
+    'energia_reactiva_ind': ['Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', SensorDeviceClass.ENERGY],
+    'energia_reactiva_cap': ['Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', SensorDeviceClass.ENERGY]
 }
 
 
