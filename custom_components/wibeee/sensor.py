@@ -115,8 +115,8 @@ class WibeeeSensor(SensorEntity):
         entity_id = slugify(f"Wibeee {mac_addr} {friendly_name} L{sensor_phase}" if mac_addr else f"wibeee_Phase{sensor_phase}_{ha_name}")
         self._wibeee_data = wibeee_data
         self._sensor_id = sensor_id
-        self._attr_unit_of_measurement = unit
-        self._attr_state = sensor_value
+        self._attr_native_unit_of_measurement = unit
+        self._attr_native_value = sensor_value
         self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
@@ -237,7 +237,7 @@ class WibeeeData(object):
         """Update all sensor states from sensor_data."""
         for sensor in self.sensors:
             if sensor.enabled:
-                sensor._attr_state = sensor_data.get(sensor._sensor_id, STATE_UNAVAILABLE)
+                sensor._attr_native_value = sensor_data.get(sensor._sensor_id, STATE_UNAVAILABLE)
                 sensor._attr_available = sensor.state is not STATE_UNAVAILABLE
                 sensor.async_schedule_update_ha_state()
                 _LOGGER.debug("Updating '%s'", sensor)
