@@ -19,9 +19,9 @@ from homeassistant.util import slugify
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
-    STATE_CLASS_MEASUREMENT,
     SensorDeviceClass,
     SensorEntity,
+    SensorStateClass,
 )
 
 from homeassistant.const import (
@@ -114,7 +114,7 @@ class WibeeeSensor(SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_native_value = sensor_value
         self._attr_available = True
-        self._attr_state_class = STATE_CLASS_MEASUREMENT
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_device_class = device_class
         self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}" if mac_addr else None
         self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
