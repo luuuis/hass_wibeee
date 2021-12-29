@@ -9,7 +9,6 @@ Documentation: https://github.com/luuuis/hass_wibeee/
 REQUIREMENTS = ["xmltodict"]
 
 import logging
-from datetime import timedelta
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -18,6 +17,7 @@ from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
     SensorEntity,
 )
+from homeassistant.config_entries import (ConfigEntry, SOURCE_IMPORT)
 from homeassistant.const import (
     DEVICE_CLASS_CURRENT,
     DEVICE_CLASS_ENERGY,
@@ -39,20 +39,19 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import slugify
 
 from .api import WibeeeAPI
+from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT)
 
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = 'Wibeee Energy Consumption Sensor'
-DEFAULT_HOST = ''
-DEFAULT_SCAN_INTERVAL = timedelta(seconds=15)
-DEFAULT_TIMEOUT = timedelta(seconds=10)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
+    vol.Required(CONF_HOST): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.time_period,
     vol.Optional(CONF_UNIQUE_ID, default=True): cv.boolean
@@ -73,18 +72,29 @@ SENSOR_TYPES = {
 }
 
 
-async def async_setup_platform(hass: HomeAssistant, config, async_add_entities, discovery_info=None):
-    """Set up the RESTful sensor."""
+async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+    """Import existing configuration from YAML."""
+    _LOGGER.warning(
+        "Loading Wibeee via platform setup is deprecated; Please remove it from the YAML configuration"
+    )
+    hass.async_create_task(hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_IMPORT},
+        data=config,
+    ))
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> bool:
+    """Set up a Wibeee from a config entry."""
     _LOGGER.debug("Setting up Wibeee Sensors...")
 
     session = async_get_clientsession(hass)
-    host = config.get(CONF_HOST)
-    scan_interval = config.get(CONF_SCAN_INTERVAL)
-    timeout = config.get(CONF_TIMEOUT)
-    unique_id = config.get(CONF_UNIQUE_ID)
+    host = entry.data[CONF_HOST]
+    scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    timeout = entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
-    device = await api.async_fetch_device_info(retries=5) if unique_id else None
+    device = await api.async_fetch_device_info(retries=5)
     status = await api.async_fetch_status(retries=10)
 
     sensors = WibeeeSensor.make_device_sensors(device, status)
@@ -103,7 +113,8 @@ async def async_setup_platform(hass: HomeAssistant, config, async_add_entities, 
                 raise PlatformNotReady from err
 
     _LOGGER.debug(f"Start polling {host} with scan_interval: {scan_interval}")
-    async_track_time_interval(hass, fetching_data, scan_interval)
+    remove_listener = async_track_time_interval(hass, fetching_data, scan_interval)
+    hass.data[DOMAIN][entry.entry_id]['disposers'].update(fetch_status=remove_listener)
 
     _LOGGER.debug("Setup completed!")
     return True
@@ -116,14 +127,14 @@ class WibeeeSensor(SensorEntity):
         """Initialize the sensor."""
         ha_name, friendly_name, unit, device_class = SENSOR_TYPES[sensor_type]
         [device_name, mac_addr] = [device['id'], device['mac_addr']]
-        entity_id = slugify(f"Wibeee {mac_addr} {friendly_name} L{sensor_phase}" if mac_addr else f"wibeee_Phase{sensor_phase}_{ha_name}")
+        entity_id = slugify(f"{DOMAIN} {mac_addr} {friendly_name} L{sensor_phase}")
         self._xml_name = xml_name
         self._attr_native_unit_of_measurement = unit
         self._attr_native_value = sensor_value
         self._attr_available = True
         self._attr_state_class = STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
-        self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}" if mac_addr else None
+        self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
         self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
         self._attr_should_poll = False
         self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name

@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Wibeee device",
+        "description": "Enter energy meter information.",
+        "data": {
+          "host": "Hostname or IP address"
+        }
+      }
+    },
+    "error": {
+      "no_device_info": "Couldn't read device info.",
+      "unknown": "Unknown error."
+    }
+  }
+}
