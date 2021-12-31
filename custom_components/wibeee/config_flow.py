@@ -56,15 +56,17 @@ class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception", exc_info=True)
                 errors["base"] = "unknown"
 
-        return await self._show_setup_form(errors)
+        return await self._show_setup_form(conf=user_input, errors=errors)
 
     async def async_step_import(self, conf: dict):
         """Import a configuration from config.yaml."""
-        return await self.async_step_user(user_input={CONF_HOST: conf[CONF_HOST]})
+        return await self.async_step_user(user_input=conf)
 
-    async def _show_setup_form(self, errors=None):
+    async def _show_setup_form(self, conf=None, errors=None):
         """Show the setup form to the user."""
-        schema = vol.Schema({vol.Required(CONF_HOST): str, })
+        schema = vol.Schema({
+            vol.Required(CONF_HOST, default=conf[CONF_HOST] if conf else None): str,
+        })
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors or {})
 
     @staticmethod
