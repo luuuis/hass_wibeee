@@ -9,6 +9,7 @@ Documentation: https://github.com/luuuis/hass_wibeee/
 REQUIREMENTS = ["xmltodict"]
 
 import logging
+from datetime import timedelta
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -86,12 +87,12 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> bool:
     """Set up a Wibeee from a config entry."""
-    _LOGGER.debug("Setting up Wibeee Sensors...")
+    _LOGGER.debug(f"Setting up Wibeee Sensors for '{entry.unique_id}'...")
 
     session = async_get_clientsession(hass)
     host = entry.data[CONF_HOST]
-    scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-    timeout = entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+    scan_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds()))
+    timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
     device = await api.async_fetch_device_info(retries=5)
@@ -112,11 +113,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             if now is None:
                 raise PlatformNotReady from err
 
-    _LOGGER.debug(f"Start polling {host} with scan_interval: {scan_interval}")
     remove_listener = async_track_time_interval(hass, fetching_data, scan_interval)
     hass.data[DOMAIN][entry.entry_id]['disposers'].update(fetch_status=remove_listener)
 
-    _LOGGER.debug("Setup completed!")
+    _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, scan_interval={scan_interval}, timeout={timeout})")
     return True
 
 

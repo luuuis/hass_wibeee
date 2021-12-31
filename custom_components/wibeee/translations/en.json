@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Add Wibeee device",
-        "description": "Enter energy meter information.",
+        "description": "If using an IP address make sure the device is configured with a static IP address or DHCP assignment.",
         "data": {
           "host": "Hostname or IP address"
         }
@@ -12,6 +12,17 @@
     "error": {
       "no_device_info": "Couldn't read device info.",
       "unknown": "Unknown error."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Wibeee integration options",
+        "description": "Customize the integration.",
+        "data": {
+          "scan_interval": "Device polling interval in seconds."
+        }
+      }
     }
   }
 }

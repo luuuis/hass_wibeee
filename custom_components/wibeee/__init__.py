@@ -19,7 +19,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {'disposers': {}}
 
-    _LOGGER.info(f"Setup config entry for {entry.title} (unique_id={entry.unique_id})")
+    _LOGGER.info(f"Setup config entry '{entry.title}' (unique_id={entry.unique_id})")
+
+    # Update things based on options
+    entry.async_on_unload(entry.add_update_listener(async_update_options))
 
     # Forward the setup to the sensor platform.
     hass.async_create_task(hass.config_entries.async_forward_entry_setup(entry, "sensor"))
@@ -48,5 +51,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if unload_ok:
             hass.data[DOMAIN].pop(entry.entry_id)
 
-    _LOGGER.info(f"Unloaded config entry for {entry.title} (unique_id={entry.unique_id})")
+    _LOGGER.info(f"Unloaded config entry '{entry.title}' (unique_id={entry.unique_id})")
     return dispose_ok and unload_ok
+
+
+async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Update options."""
+    await hass.config_entries.async_reload(entry.entry_id)
