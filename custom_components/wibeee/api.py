@@ -63,10 +63,10 @@ class WibeeeAPI(object):
             except Exception as exc:
                 if try_n == retries:
                     retry_info = f' after {try_n} retries' if retries > 0 else ''
-                    _LOGGER.error('Error getting %s%s: %s: %s', url, retry_info, exc.__class__.__name__, exc, exc_info=True)
+                    _LOGGER.error('Error getting %s%s: %s: %s', url, retry_info, exc.__class__.__name__, exc)
                     return {}
                 else:
-                    _LOGGER.warning('Error getting %s, will retry. %s: %s', url, exc.__class__.__name__, exc, exc_info=True)
+                    _LOGGER.debug('Error getting %s, will retry. %s: %s', url, exc.__class__.__name__, exc)
                     return await fetch_with_retries(try_n + 1)
 
         return await fetch_with_retries(0)
