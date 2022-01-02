@@ -40,12 +40,14 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import slugify
-
+from homeassistant.helpers import device_registry as dr
 from .api import WibeeeAPI
 from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT)
+from .util import short_mac
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -137,6 +139,7 @@ class WibeeeSensor(SensorEntity):
         self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
         self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
         self._attr_should_poll = False
+        self._attr_device_info = _make_device_info(mac_addr, sensor_phase)
         self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name
 
     @callback
@@ -154,3 +157,19 @@ class WibeeeSensor(SensorEntity):
         phase_values = [(key, value, key[4:].split("_", 1)) for key, value in status.items() if key.startswith('fase')]
         known_values = [(key, phase, stype, value) for (key, value, (phase, stype)) in phase_values]
         return [WibeeeSensor(device, key, phase, stype, value) for (key, phase, stype, value) in known_values if stype in SENSOR_TYPES]
+
+
+def _make_device_info(mac_addr, sensor_phase) -> DeviceInfo:
+    is_phase = sensor_phase != '4'
+
+    return DeviceInfo(
+        # identifiers and links
+        identifiers={(DOMAIN, f'{mac_addr}{"_L" + sensor_phase if is_phase else ""}')},
+        via_device=(DOMAIN, f'{mac_addr}') if is_phase else None,
+        connections={(dr.CONNECTION_NETWORK_MAC, mac_addr)},
+
+        # and now for the humans :)
+        name=f'Wibeee {short_mac(mac_addr)} {" Line " + sensor_phase if is_phase else ""}',
+        model='Wibeee Current Clamp' if is_phase else 'Wibeee Consumption Analyzer',
+        manufacturer='Smilics',
+    )
