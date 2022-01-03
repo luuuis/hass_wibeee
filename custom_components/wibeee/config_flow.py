@@ -27,7 +27,7 @@ async def validate_input(hass: HomeAssistant, user_input: dict) -> [str, str, di
     except Exception as e:
         raise NoDeviceInfo from e
 
-    mac_addr = format_mac(device['mac_addr'])
+    mac_addr = format_mac(device['macAddr'])
     unique_id = mac_addr
     name = f"Wibeee {short_mac(mac_addr)}"
 

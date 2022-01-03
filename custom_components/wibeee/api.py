@@ -31,11 +31,18 @@ class WibeeeAPI(object):
         devices = await self.async_fetch_url(f'http://{self.host}/services/user/devices.xml', retries)
         device_id = devices['devices']['id']
 
-        # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
-        values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var={quote_plus(device_id)}.macAddr', retries)
-        mac_addr = values['values']['variable']['value']
+        var_names = ['macAddr', 'softVersion', 'model', 'ipAddr']
+        var_ids = [f"{quote_plus(device_id)}.{name}" for name in var_names]
+        values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var={"&".join(var_ids)}', retries)
 
-        return dict(id=device_id, mac_addr=mac_addr.replace(":", "").lower()) if device_id and mac_addr else None
+        # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
+        device_vars = {var['id']: var['value'] for var in values['values']['variable']}
+
+        return {
+            **device_vars,
+            'macAddr': device_vars['macAddr'].replace(':', ''),
+            'id': device_id,
+        } if len(device_vars) == len(var_names) else None
 
     async def async_fetch_url(self, url, retries: int = 0):
         async def fetch_with_retries(try_n):

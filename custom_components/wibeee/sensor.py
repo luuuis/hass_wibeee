@@ -44,7 +44,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import slugify
-from homeassistant.helpers import device_registry as dr
+
 from .api import WibeeeAPI
 from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT)
 from .util import short_mac
@@ -72,6 +72,20 @@ SENSOR_TYPES = {
     'energia_activa': ['Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY],
     'energia_reactiva_ind': ['Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
     'energia_reactiva_cap': ['Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
+}
+
+KNOWN_MODELS = {
+    'WBM': 'Wibeee 1Ph',
+    'WBT': 'Wibeee 3Ph',
+    'WTD': 'Wibeee 3Ph RN',
+    'WX2': 'Wibeee MAX 2S',
+    'WX3': 'Wibeee MAX 3S',
+    'WXX': 'Wibeee MAX MS',
+    'WBB': 'Wibeee BOX',
+    'WB3': 'Wibeee BOX S3P',
+    'W3P': 'Wibeee 3Ph 3W',
+    'WGD': 'Wibeee GND',
+    'WBP': 'Wibeee PLUG',
 }
 
 
@@ -128,7 +142,7 @@ class WibeeeSensor(SensorEntity):
     def __init__(self, device, xml_name: str, sensor_phase: str, sensor_type: str, sensor_value):
         """Initialize the sensor."""
         ha_name, friendly_name, unit, device_class = SENSOR_TYPES[sensor_type]
-        [device_name, mac_addr] = [device['id'], device['mac_addr']]
+        [device_name, mac_addr] = [device['id'], device['macAddr']]
         entity_id = slugify(f"{DOMAIN} {mac_addr} {friendly_name} L{sensor_phase}")
         self._xml_name = xml_name
         self._attr_native_unit_of_measurement = unit
@@ -139,7 +153,7 @@ class WibeeeSensor(SensorEntity):
         self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
         self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
         self._attr_should_poll = False
-        self._attr_device_info = _make_device_info(mac_addr, sensor_phase)
+        self._attr_device_info = _make_device_info(device, sensor_phase)
         self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name
 
     @callback
@@ -159,17 +173,22 @@ class WibeeeSensor(SensorEntity):
         return [WibeeeSensor(device, key, phase, stype, value) for (key, phase, stype, value) in known_values if stype in SENSOR_TYPES]
 
 
-def _make_device_info(mac_addr, sensor_phase) -> DeviceInfo:
-    is_phase = sensor_phase != '4'
+def _make_device_info(device, sensor_phase) -> DeviceInfo:
+    mac_addr = device['macAddr']
+    is_clamp = sensor_phase != '4'
+
+    device_name = f'Wibeee {short_mac(mac_addr)}'
+    device_model = KNOWN_MODELS.get(device['model'], 'Wibeee Energy Meter')
 
     return DeviceInfo(
         # identifiers and links
-        identifiers={(DOMAIN, f'{mac_addr}{"_L" + sensor_phase if is_phase else ""}')},
-        via_device=(DOMAIN, f'{mac_addr}') if is_phase else None,
-        connections={(dr.CONNECTION_NETWORK_MAC, mac_addr)},
+        identifiers={(DOMAIN, f'{mac_addr}_L{sensor_phase}' if is_clamp else mac_addr)},
+        via_device=(DOMAIN, f'{mac_addr}') if is_clamp else None,
 
         # and now for the humans :)
-        name=f'Wibeee {short_mac(mac_addr)} {" Line " + sensor_phase if is_phase else ""}',
-        model='Wibeee Current Clamp' if is_phase else 'Wibeee Consumption Analyzer',
+        name=device_name if not is_clamp else f"{device_name} Line {sensor_phase}",
+        model=device_model if not is_clamp else f'{device_model} Clamp',
         manufacturer='Smilics',
+        configuration_url=f"http://{device['ipAddr']}/" if not is_clamp else None,
+        sw_version=f"{device['softVersion']}" if not is_clamp else None,
     )
