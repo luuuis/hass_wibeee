@@ -2,6 +2,6 @@
     "name": "Wibeee (and Mirubee) energy monitor",
     "render_readme": true,
     "zip_release": true,
-    "filename": "hass_wibee.zip",
+    "filename": "hass_wibeee.zip",
     "homeassistant": "2021.8.8"
 }

@@ -3,13 +3,13 @@ install: echo "Nothing to install, $TRAVIS_TAG"
 script: echo "Nothing to test" && true
 before_deploy:
   - cd custom_components/wibeee
-  - zip -r hass_wibee .
+  - zip -r hass_wibeee .
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
   tag_name: $TRAVIS_TAG
   name: $TRAVIS_TAG
-  file: hass_wibee.zip
+  file: hass_wibeee.zip
   skip_cleanup: true
   draft: true
   prerelease: true
