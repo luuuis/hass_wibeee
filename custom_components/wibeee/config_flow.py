@@ -8,6 +8,7 @@ import voluptuous as vol
 from homeassistant import config_entries, exceptions
 from homeassistant.const import (CONF_HOST, CONF_SCAN_INTERVAL)
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
 
@@ -48,6 +49,10 @@ class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
 
                 return self.async_create_entry(title=title, data=data)
+
+            except AbortFlow:
+                # allow this to escape the catch-all below
+                raise
 
             except NoDeviceInfo:
                 # host is not a Wibeee...
