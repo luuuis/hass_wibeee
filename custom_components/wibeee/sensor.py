@@ -16,6 +16,7 @@ import voluptuous as vol
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
     STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_TOTAL_INCREASING,
     SensorEntity,
 )
 from homeassistant.config_entries import (ConfigEntry, SOURCE_IMPORT)
@@ -148,7 +149,7 @@ class WibeeeSensor(SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_native_value = sensor_value
         self._attr_available = True
-        self._attr_state_class = STATE_CLASS_MEASUREMENT
+        self._attr_state_class = STATE_CLASS_TOTAL_INCREASING if device_class is DEVICE_CLASS_ENERGY else STATE_CLASS_MEASUREMENT
         self._attr_device_class = device_class
         self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
         self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"

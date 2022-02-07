@@ -3,5 +3,5 @@
     "render_readme": true,
     "zip_release": true,
     "filename": "hass_wibeee.zip",
-    "homeassistant": "2021.8.8"
+    "homeassistant": "2021.9.1"
 }
