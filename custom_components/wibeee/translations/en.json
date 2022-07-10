@@ -20,7 +20,8 @@
         "title": "Wibeee integration options",
         "description": "Customize the integration.",
         "data": {
-          "scan_interval": "Device polling interval in seconds."
+          "scan_interval": "Device polling interval in seconds.",
+          "nest_proxy_enable": "Enable Nest Proxy on port 8600"
         }
       }
     }

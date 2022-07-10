@@ -13,7 +13,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
 
 from .api import WibeeeAPI
-from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL)
+from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, CONF_NEST_PROXY_ENABLE)
 from .util import short_mac
 
 _LOGGER = logging.getLogger(__name__)
@@ -99,7 +99,11 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
                     default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds())
-                ): int
+                ): int,
+                vol.Optional(
+                    CONF_NEST_PROXY_ENABLE,
+                    default=self.config_entry.options.get(CONF_NEST_PROXY_ENABLE, False)
+                ): bool
             }),
         )
 

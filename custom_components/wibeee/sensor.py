@@ -9,6 +9,7 @@ Documentation: https://github.com/luuuis/hass_wibeee/
 REQUIREMENTS = ["xmltodict"]
 
 import logging
+from collections import namedtuple
 from datetime import timedelta
 
 import homeassistant.helpers.config_validation as cv
@@ -44,10 +45,12 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.typing import StateType
 from homeassistant.util import slugify
 
 from .api import WibeeeAPI
-from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT)
+from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, CONF_NEST_PROXY_ENABLE)
+from .nest import get_nest_proxy
 from .util import short_mac
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,19 +64,40 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_UNIQUE_ID, default=True): cv.boolean
 })
 
-SENSOR_TYPES = {
-    'vrms': ['Vrms', 'Phase Voltage', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE],
-    'irms': ['Irms', 'Current', ELECTRIC_CURRENT_AMPERE, DEVICE_CLASS_CURRENT],
-    'frecuencia': ['Frequency', 'Frequency', FREQUENCY_HERTZ, None],
-    'p_activa': ['Active_Power', 'Active Power', POWER_WATT, DEVICE_CLASS_POWER],
-    'p_reactiva_ind': ['Inductive_Reactive_Power', 'Inductive Reactive Power', 'VArL', DEVICE_CLASS_POWER],
-    'p_reactiva_cap': ['Capacitive_Reactive_Power', 'Capacitive Reactive Power', 'VArC', DEVICE_CLASS_POWER],
-    'p_aparent': ['Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, DEVICE_CLASS_POWER],
-    'factor_potencia': ['Power_Factor', 'Power Factor', '', DEVICE_CLASS_POWER_FACTOR],
-    'energia_activa': ['Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY],
-    'energia_reactiva_ind': ['Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY],
-    'energia_reactiva_cap': ['Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY]
-}
+
+class SensorType(namedtuple('SensorType', [
+    'status_xml_suffix',
+    'nest_push_prefix',
+    'unique_name',
+    'friendly_name',
+    'unit',
+    'device_class',
+])):
+    """\
+    SensorType: Wibeee supported sensor definition.
+
+    status_xml_suffix - the suffix used for elements in `status.xml` output (e.g.: "vrms")
+    nest_push_prefix  - optional prefix used in Wibeee Nest push requests such as receiverLeap (e.g.: "v")
+    friendly_name     - used to build the sensor name and entity id (e.g.: "Phase Voltage")
+    unique_name       - used to build the sensor unique_id (e.g.: "Vrms")
+    unit              - unit to use for the sensor (e.g.: "V")
+    device_class      - optional device class to use for the sensor (e.g.: "voltage")
+    """
+
+
+KNOWN_SENSORS = [
+    SensorType('vrms', 'v', 'Vrms', 'Phase Voltage', ELECTRIC_POTENTIAL_VOLT, DEVICE_CLASS_VOLTAGE),
+    SensorType('irms', 'i', 'Irms', 'Current', ELECTRIC_CURRENT_AMPERE, DEVICE_CLASS_CURRENT),
+    SensorType('frecuencia', 'q', 'Frequency', 'Frequency', FREQUENCY_HERTZ, device_class=None),
+    SensorType('p_activa', 'a', 'Active_Power', 'Active Power', POWER_WATT, DEVICE_CLASS_POWER),
+    SensorType('p_reactiva_ind', 'r', 'Inductive_Reactive_Power', 'Inductive Reactive Power', 'VArL', DEVICE_CLASS_POWER),
+    SensorType('p_reactiva_cap', None, 'Capacitive_Reactive_Power', 'Capacitive Reactive Power', 'VArC', DEVICE_CLASS_POWER),
+    SensorType('p_aparent', 'p', 'Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, DEVICE_CLASS_POWER),
+    SensorType('factor_potencia', 'f', 'Power_Factor', 'Power Factor', '', DEVICE_CLASS_POWER_FACTOR),
+    SensorType('energia_activa', 'e', 'Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, DEVICE_CLASS_ENERGY),
+    SensorType('energia_reactiva_ind', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', DEVICE_CLASS_ENERGY),
+    SensorType('energia_reactiva_cap', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', DEVICE_CLASS_ENERGY),
+]
 
 KNOWN_MODELS = {
     'WBM': 'Wibeee 1Ph',
@@ -102,6 +126,55 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     ))
 
 
+def create_sensors(device, status) -> list['WibeeeSensor']:
+    xml_suffixes = {sensor_type.status_xml_suffix: sensor_type for sensor_type in KNOWN_SENSORS}
+    phase_xml_suffixes = [(key[4:].split("_", 1), value) for key, value in status.items() if key.startswith('fase')]
+    known_sensors = [(phase, xml_suffixes[suffix], value) for ((phase, suffix), value) in phase_xml_suffixes if suffix in xml_suffixes]
+
+    return [WibeeeSensor(device, phase, sensor_type, initial_value) for (phase, sensor_type, initial_value) in known_sensors]
+
+
+def update_sensors(sensors, update_source, lookup_key, data):
+    sensors_with_updates = [s for s in sensors if lookup_key(s) in data]
+    _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data, sensors_with_updates)
+    for s in sensors_with_updates:
+        value = data.get(lookup_key(s))
+        s.update_value(value, update_source)
+
+
+def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, sensors: list['WibeeeSensor'], scan_interval: timedelta):
+    def status_xml_param(sensor: WibeeeSensor) -> str:
+        return sensor.status_xml_param
+
+    async def fetching_data(now=None):
+        try:
+            fetched = await api.async_fetch_status(retries=3)
+            update_sensors(sensors, 'status.xml', status_xml_param, fetched)
+        except Exception as err:
+            if now is None:
+                raise PlatformNotReady from err
+
+    # update_sensors(sensors, 'initial status.xml', status_xml_param, initial_status)
+    return async_track_time_interval(hass, fetching_data, scan_interval)
+
+
+async def async_setup_local_push(hass: HomeAssistant, device, sensors: list['WibeeeSensor']):
+    mac_address = device['macAddr']
+    nest_proxy = await get_nest_proxy(hass)
+
+    def nest_push_param(s: WibeeeSensor) -> str:
+        return s.nest_push_param
+
+    def on_pushed_data(pushed_data: dict) -> None:
+        update_sensors(sensors, 'Nest push', nest_push_param, pushed_data)
+
+    def unregister_listener():
+        nest_proxy.unregister_device(mac_address)
+
+    nest_proxy.register_device(mac_address, on_pushed_data)
+    return unregister_listener
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> bool:
     """Set up a Wibeee from a config entry."""
     _LOGGER.debug(f"Setting up Wibeee Sensors for '{entry.unique_id}'...")
@@ -110,28 +183,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     host = entry.data[CONF_HOST]
     scan_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds()))
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
+    use_nest_proxy = entry.options.get(CONF_NEST_PROXY_ENABLE)
+
+    if use_nest_proxy:
+        # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
+        # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
+        await get_nest_proxy(hass)
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
     device = await api.async_fetch_device_info(retries=5)
-    status = await api.async_fetch_status(retries=10)
+    initial_status = await api.async_fetch_status(retries=10)
 
-    sensors = WibeeeSensor.make_device_sensors(device, status)
+    sensors = create_sensors(device, initial_status)
     for sensor in sensors:
         _LOGGER.debug("Adding '%s' (unique_id=%s)", sensor, sensor.unique_id)
     async_add_entities(sensors, True)
 
-    async def fetching_data(now=None):
-        """Fetch from API and update sensors."""
-        try:
-            fetched = await api.async_fetch_status(retries=3)
-            for s in sensors:
-                s.update_from_status(fetched)
-        except Exception as err:
-            if now is None:
-                raise PlatformNotReady from err
+    disposers = hass.data[DOMAIN][entry.entry_id]['disposers']
 
-    remove_listener = async_track_time_interval(hass, fetching_data, scan_interval)
-    hass.data[DOMAIN][entry.entry_id]['disposers'].update(fetch_status=remove_listener)
+    remove_fetch_listener = setup_local_polling(hass, api, sensors, scan_interval)
+    disposers.update(fetch_status=remove_fetch_listener)
+
+    if use_nest_proxy:
+        remove_push_listener = await async_setup_local_push(hass, device, sensors)
+        disposers.update(push_listener=remove_push_listener)
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, scan_interval={scan_interval}, timeout={timeout})")
     return True
@@ -140,38 +215,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, device, xml_name: str, sensor_phase: str, sensor_type: str, sensor_value):
+    def __init__(self, device, sensor_phase: str, sensor_type: SensorType, initial_value: StateType):
         """Initialize the sensor."""
-        ha_name, friendly_name, unit, device_class = SENSOR_TYPES[sensor_type]
         [device_name, mac_addr] = [device['id'], device['macAddr']]
-        entity_id = slugify(f"{DOMAIN} {mac_addr} {friendly_name} L{sensor_phase}")
-        self._xml_name = xml_name
-        self._attr_native_unit_of_measurement = unit
-        self._attr_native_value = sensor_value
+        entity_id = slugify(f"{DOMAIN} {mac_addr} {sensor_type.friendly_name} L{sensor_phase}")
+        self._attr_native_unit_of_measurement = sensor_type.unit
+        self._attr_native_value = initial_value
         self._attr_available = True
-        self._attr_state_class = STATE_CLASS_TOTAL_INCREASING if device_class is DEVICE_CLASS_ENERGY else STATE_CLASS_MEASUREMENT
-        self._attr_device_class = device_class
-        self._attr_unique_id = f"_{mac_addr}_{ha_name.lower()}_{sensor_phase}"
-        self._attr_name = f"{device_name} {friendly_name} L{sensor_phase}"
+        self._attr_state_class = STATE_CLASS_TOTAL_INCREASING if sensor_type.device_class is DEVICE_CLASS_ENERGY else STATE_CLASS_MEASUREMENT
+        self._attr_device_class = sensor_type.device_class
+        self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
+        self._attr_name = f"{device_name} {sensor_type.friendly_name} L{sensor_phase}"
         self._attr_should_poll = False
         self._attr_device_info = _make_device_info(device, sensor_phase)
         self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name
+        self.status_xml_param = f"fase{sensor_phase}_{sensor_type.status_xml_suffix}"
+        self.nest_push_param = f"{sensor_type.nest_push_prefix}{sensor_phase}"
 
     @callback
-    def update_from_status(self, status) -> None:
-        """Updates this sensor from the fetched status."""
+    def update_value(self, value, update_source='') -> None:
+        """Updates this sensor from the fetched status value."""
         if self.enabled:
-            self._attr_native_value = status.get(self._xml_name, STATE_UNAVAILABLE)
+            self._attr_native_value = value
             self._attr_available = self.state is not STATE_UNAVAILABLE
             self.async_schedule_update_ha_state()
-            _LOGGER.debug("Updating '%s'", self)
-
-    @staticmethod
-    def make_device_sensors(device, status) -> list['WibeeeSensor']:
-        """Returns a list of the sensors discovered on the device."""
-        phase_values = [(key, value, key[4:].split("_", 1)) for key, value in status.items() if key.startswith('fase')]
-        known_values = [(key, phase, stype, value) for (key, value, (phase, stype)) in phase_values]
-        return [WibeeeSensor(device, key, phase, stype, value) for (key, phase, stype, value) in known_values if stype in SENSOR_TYPES]
+            _LOGGER.debug("Updating from %s: %s", update_source, self)
 
 
 def _make_device_info(device, sensor_phase) -> DeviceInfo:
