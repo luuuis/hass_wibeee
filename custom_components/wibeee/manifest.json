@@ -4,7 +4,9 @@
   "version": "3.1.2",
   "documentation": "https://github.com/luuuis/hass_wibeee",
   "issue_tracker": "https://github.com/luuuis/hass_wibeee/issues",
-  "dependencies": [],
+  "dependencies": [
+    "network"
+  ],
   "codeowners": [
     "@luuuis"
   ],
