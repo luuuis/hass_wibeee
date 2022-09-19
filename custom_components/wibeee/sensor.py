@@ -25,6 +25,7 @@ from homeassistant.const import (
     FREQUENCY_HERTZ,
     POWER_WATT,
     POWER_VOLT_AMPERE,
+    POWER_VOLT_AMPERE_REACTIVE,
     ELECTRIC_POTENTIAL_VOLT,
     ELECTRIC_CURRENT_AMPERE,
     ENERGY_WATT_HOUR,
@@ -51,6 +52,13 @@ from .util import short_mac
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = 'Wibeee Energy Consumption Sensor'
+
+# Not known in HA yet so we do as the Fronius integration.
+#
+# https://github.com/home-assistant/core/blob/75abf87611d8ad5627126a3fe09fdddc8402237c/homeassistant/components/fronius/sensor.py#L43
+ENERGY_VOLT_AMPERE_REACTIVE_HOUR = 'varh'
+
+ENERGY_CLASSES = [SensorDeviceClass.ENERGY, ENERGY_VOLT_AMPERE_REACTIVE_HOUR]
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -85,13 +93,13 @@ KNOWN_SENSORS = [
     SensorType('irms', 'i', 'Irms', 'Current', ELECTRIC_CURRENT_AMPERE, SensorDeviceClass.CURRENT),
     SensorType('frecuencia', 'q', 'Frequency', 'Frequency', FREQUENCY_HERTZ, device_class=None),
     SensorType('p_activa', 'a', 'Active_Power', 'Active Power', POWER_WATT, SensorDeviceClass.POWER),
-    SensorType('p_reactiva_ind', 'r', 'Inductive_Reactive_Power', 'Inductive Reactive Power', 'var', SensorDeviceClass.REACTIVE_POWER),
-    SensorType('p_reactiva_cap', None, 'Capacitive_Reactive_Power', 'Capacitive Reactive Power', 'var', SensorDeviceClass.REACTIVE_POWER),
+    SensorType('p_reactiva_ind', 'r', 'Inductive_Reactive_Power', 'Inductive Reactive Power', POWER_VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
+    SensorType('p_reactiva_cap', None, 'Capacitive_Reactive_Power', 'Capacitive Reactive Power', POWER_VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
     SensorType('p_aparent', 'p', 'Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
     SensorType('factor_potencia', 'f', 'Power_Factor', 'Power Factor', '', SensorDeviceClass.POWER_FACTOR),
     SensorType('energia_activa', 'e', 'Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('energia_reactiva_ind', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', 'VArLh', SensorDeviceClass.ENERGY),
-    SensorType('energia_reactiva_cap', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', 'VArCh', SensorDeviceClass.ENERGY),
+    SensorType('energia_reactiva_ind', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('energia_reactiva_cap', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
 ]
 
 KNOWN_MODELS = {
@@ -217,7 +225,7 @@ class WibeeeSensor(SensorEntity):
         self._attr_native_unit_of_measurement = sensor_type.unit
         self._attr_native_value = initial_value
         self._attr_available = True
-        self._attr_state_class = SensorStateClass.TOTAL_INCREASING if sensor_type.device_class is SensorDeviceClass.ENERGY else SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING if sensor_type.device_class in ENERGY_CLASSES else SensorStateClass.MEASUREMENT
         self._attr_device_class = sensor_type.device_class
         self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
         self._attr_name = f"{device_name} {sensor_type.friendly_name} L{sensor_phase}"
