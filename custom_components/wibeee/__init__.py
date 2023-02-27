@@ -43,7 +43,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     _LOGGER.debug(f"Disposers finished.")
 
-    dispose_ok = len(disposers) is 0
+    dispose_ok = len(disposers) == 0
     unload_ok = False
     if dispose_ok:
         _LOGGER.debug(f"Unloading sensor entry for {entry.title} (unique_id={entry.unique_id})")
