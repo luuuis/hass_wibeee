@@ -9,6 +9,9 @@
         }
       }
     },
+    "abort": {
+      "already_configured": "Device is already configured"
+    },
     "error": {
       "no_device_info": "Couldn't read device info.",
       "unknown": "Unknown error."

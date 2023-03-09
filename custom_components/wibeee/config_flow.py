@@ -46,7 +46,7 @@ class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 title, unique_id, data = await validate_input(self.hass, user_input)
                 await self.async_set_unique_id(unique_id)
-                self._abort_if_unique_id_configured()
+                self._abort_if_unique_id_configured(updates=user_input)
 
                 return self.async_create_entry(title=title, data=data)
 
