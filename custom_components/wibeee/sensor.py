@@ -46,7 +46,12 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.util import slugify
 
 from .api import WibeeeAPI
-from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT, CONF_NEST_PROXY_ENABLE)
+from .const import (
+    DOMAIN,
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_TIMEOUT,
+    CONF_NEST_PROXY_ENABLE
+)
 from .nest import get_nest_proxy
 from .util import short_mac
 
@@ -162,9 +167,12 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, sensors: list['Wibe
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
 
-async def async_setup_local_push(hass: HomeAssistant, device, sensors: list['WibeeeSensor']):
+async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device, sensors: list['WibeeeSensor']):
     mac_address = device['macAddr']
-    nest_proxy = await get_nest_proxy(hass)
+    nest_proxy = await get_nest_proxy(
+        hass,
+        entry
+    )
 
     def nest_push_param(s: WibeeeSensor) -> str:
         return s.nest_push_param
@@ -192,7 +200,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     if use_nest_proxy:
         # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
         # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
-        await get_nest_proxy(hass)
+        await get_nest_proxy(
+            hass,
+            entry
+        )
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
     device = await api.async_fetch_device_info(retries=5)
@@ -209,7 +220,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     disposers.update(fetch_status=remove_fetch_listener)
 
     if use_nest_proxy:
-        remove_push_listener = await async_setup_local_push(hass, device, sensors)
+        remove_push_listener = await async_setup_local_push(hass, entry, device, sensors)
         disposers.update(push_listener=remove_push_listener)
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, scan_interval={scan_interval}, timeout={timeout})")

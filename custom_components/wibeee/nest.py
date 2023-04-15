@@ -4,6 +4,7 @@ from urllib.parse import parse_qsl
 
 from homeassistant.components.network import async_get_source_ip
 from homeassistant.components.network.const import PUBLIC_TARGET_IP
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 from homeassistant.helpers import singleton
 from homeassistant.helpers.typing import EventType
@@ -17,6 +18,12 @@ from aiohttp.web_routedef import _HandlerType
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import HomeAssistant
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
+
+from .const import (
+    CONF_NEST_PROXY_PORT,
+    CONF_NEST_UPSTREAM_URL,
+    CONF_NEST_UPSTREAM_PORT
+)
 
 
 class NestProxy(object):
@@ -38,11 +45,12 @@ class NestProxy(object):
 @singleton.singleton("wibeee_nest_proxy")
 async def get_nest_proxy(
         hass: HomeAssistant,
-        upstream='http://nest-ingest.wibeee.com',
-        local_port=8600,
+        entry: ConfigEntry
 ) -> NestProxy:
     session = async_get_clientsession(hass)
     nest_proxy = NestProxy()
+    upstream = entry.options.get(CONF_NEST_UPSTREAM_URL) + ':' + str(entry.options.get(CONF_NEST_UPSTREAM_PORT))
+    local_port = entry.options.get(CONF_NEST_PROXY_PORT)
 
     def nest_forward(snoop_data: Callable[[web.Request], Tuple[str, Dict]] = None) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:

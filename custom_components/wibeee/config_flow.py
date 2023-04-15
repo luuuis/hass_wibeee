@@ -13,7 +13,17 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
 
 from .api import WibeeeAPI
-from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, CONF_NEST_PROXY_ENABLE)
+from .const import (
+    DOMAIN,
+    NEST_URL,
+    NEST_PORT,
+    PROXY_PORT,
+    DEFAULT_SCAN_INTERVAL,
+    CONF_NEST_PROXY_ENABLE,
+    CONF_NEST_PROXY_PORT,
+    CONF_NEST_UPSTREAM_URL,
+    CONF_NEST_UPSTREAM_PORT
+)
 from .util import short_mac
 
 _LOGGER = logging.getLogger(__name__)
@@ -103,7 +113,19 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_NEST_PROXY_ENABLE,
                     default=self.config_entry.options.get(CONF_NEST_PROXY_ENABLE, False)
-                ): bool
+                ): bool,
+                vol.Optional(
+                    CONF_NEST_PROXY_PORT,
+                    default=self.config_entry.options.get(CONF_NEST_PROXY_PORT, PROXY_PORT)
+                ): int,
+                vol.Optional(
+                    CONF_NEST_UPSTREAM_URL,
+                    default=self.config_entry.options.get(CONF_NEST_UPSTREAM_URL, NEST_URL)
+                ): str,
+                vol.Optional(
+                    CONF_NEST_UPSTREAM_PORT,
+                    default=self.config_entry.options.get(CONF_NEST_UPSTREAM_PORT, NEST_PORT)
+                ): int
             }),
         )
 
