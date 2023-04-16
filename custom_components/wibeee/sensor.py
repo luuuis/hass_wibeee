@@ -50,7 +50,10 @@ from .const import (
     DOMAIN,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
-    CONF_NEST_PROXY_ENABLE
+    CONF_NEST_PROXY_ENABLE,
+    CONF_NEST_PROXY_PORT,
+    CONF_NEST_UPSTREAM_URL,
+    CONF_NEST_UPSTREAM_PORT
 )
 from .nest import get_nest_proxy
 from .util import short_mac
@@ -170,8 +173,7 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, sensors: list['Wibe
 async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device, sensors: list['WibeeeSensor']):
     mac_address = device['macAddr']
     nest_proxy = await get_nest_proxy(
-        hass,
-        entry
+        hass
     )
 
     def nest_push_param(s: WibeeeSensor) -> str:
@@ -183,7 +185,9 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
 
-    nest_proxy.register_device(mac_address, on_pushed_data)
+    upstream = entry.options.get(CONF_NEST_UPSTREAM_URL) + ':' + str(entry.options.get(CONF_NEST_UPSTREAM_PORT))
+    local_port = entry.options.get(CONF_NEST_PROXY_PORT)
+    nest_proxy.register_device(mac_address, on_pushed_data, upstream, local_port)
     return unregister_listener
 
 
@@ -201,8 +205,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
         # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
         await get_nest_proxy(
-            hass,
-            entry
+            hass
         )
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
