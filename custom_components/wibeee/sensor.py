@@ -52,8 +52,7 @@ from .const import (
     DEFAULT_TIMEOUT,
     CONF_NEST_PROXY_ENABLE,
     CONF_NEST_PROXY_PORT,
-    CONF_NEST_UPSTREAM_URL,
-    CONF_NEST_UPSTREAM_PORT
+    CONF_NEST_UPSTREAM
 )
 from .nest import get_nest_proxy
 from .util import short_mac
@@ -185,7 +184,7 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
 
-    upstream = entry.options.get(CONF_NEST_UPSTREAM_URL) + ':' + str(entry.options.get(CONF_NEST_UPSTREAM_PORT))
+    upstream = entry.options.get(CONF_NEST_UPSTREAM)
     local_port = entry.options.get(CONF_NEST_PROXY_PORT)
     nest_proxy.register_device(mac_address, on_pushed_data, upstream, local_port)
     return unregister_listener

@@ -15,14 +15,13 @@ from homeassistant.helpers.device_registry import format_mac
 from .api import WibeeeAPI
 from .const import (
     DOMAIN,
-    NEST_URL,
-    NEST_PORT,
+    NEST_DEFAULT_UPSTREAM,
+    NEST_UPSTREAMS,
     PROXY_PORT,
     DEFAULT_SCAN_INTERVAL,
     CONF_NEST_PROXY_ENABLE,
     CONF_NEST_PROXY_PORT,
-    CONF_NEST_UPSTREAM_URL,
-    CONF_NEST_UPSTREAM_PORT
+    CONF_NEST_UPSTREAM
 )
 from .util import short_mac
 
@@ -103,30 +102,28 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        data_schema = vol.Schema({
+            vol.Optional(
+                CONF_SCAN_INTERVAL,
+                default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds())
+            ): int,
+            vol.Optional(
+                CONF_NEST_PROXY_ENABLE,
+                default=self.config_entry.options.get(CONF_NEST_PROXY_ENABLE, False)
+            ): bool,
+            vol.Optional(
+                CONF_NEST_PROXY_PORT,
+                default=self.config_entry.options.get(CONF_NEST_PROXY_PORT, PROXY_PORT)
+            ): int,
+            vol.Optional(
+                CONF_NEST_UPSTREAM,
+                default=self.config_entry.options.get(CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM)
+            ): vol.In(NEST_UPSTREAMS)
+        })
+
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({
-                vol.Optional(
-                    CONF_SCAN_INTERVAL,
-                    default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds())
-                ): int,
-                vol.Optional(
-                    CONF_NEST_PROXY_ENABLE,
-                    default=self.config_entry.options.get(CONF_NEST_PROXY_ENABLE, False)
-                ): bool,
-                vol.Optional(
-                    CONF_NEST_PROXY_PORT,
-                    default=self.config_entry.options.get(CONF_NEST_PROXY_PORT, PROXY_PORT)
-                ): int,
-                vol.Optional(
-                    CONF_NEST_UPSTREAM_URL,
-                    default=self.config_entry.options.get(CONF_NEST_UPSTREAM_URL, NEST_URL)
-                ): str,
-                vol.Optional(
-                    CONF_NEST_UPSTREAM_PORT,
-                    default=self.config_entry.options.get(CONF_NEST_UPSTREAM_PORT, NEST_PORT)
-                ): int
-            }),
+            data_schema=data_schema,
         )
 
 
