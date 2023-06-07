@@ -51,8 +51,8 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
     CONF_NEST_PROXY_ENABLE,
-    CONF_NEST_PROXY_PORT,
-    CONF_NEST_UPSTREAM
+    CONF_NEST_UPSTREAM,
+    NEST_DEFAULT_UPSTREAM,
 )
 from .nest import get_nest_proxy
 from .util import short_mac
@@ -184,9 +184,9 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
 
-    upstream = entry.options.get(CONF_NEST_UPSTREAM)
-    local_port = entry.options.get(CONF_NEST_PROXY_PORT)
-    nest_proxy.register_device(mac_address, on_pushed_data, upstream, local_port)
+    # default to Wibeee Nest for entries saved by previous versions
+    upstream = entry.options.get(CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM)
+    nest_proxy.register_device(mac_address, on_pushed_data, upstream)
     return unregister_listener
 
 

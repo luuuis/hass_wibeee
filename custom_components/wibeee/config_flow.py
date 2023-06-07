@@ -11,17 +11,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector
 
 from .api import WibeeeAPI
 from .const import (
     DOMAIN,
-    NEST_DEFAULT_UPSTREAM,
-    NEST_UPSTREAMS,
-    PROXY_PORT,
     DEFAULT_SCAN_INTERVAL,
     CONF_NEST_PROXY_ENABLE,
-    CONF_NEST_PROXY_PORT,
-    CONF_NEST_UPSTREAM
+    CONF_NEST_UPSTREAM,
+    NEST_ALL_UPSTREAMS,
+    NEST_NULL_UPSTREAM,
 )
 from .util import short_mac
 
@@ -96,11 +95,13 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         """Initialize options flow."""
         self.config_entry = config_entry
+        self.options = dict(config_entry.options)
 
     async def async_step_init(self, user_input=None):
-        """Manage the options."""
+        """Main options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            self.options.update(user_input)
+            return await self.async_step_configure_upstream()
 
         data_schema = vol.Schema({
             vol.Optional(
@@ -111,19 +112,33 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_NEST_PROXY_ENABLE,
                 default=self.config_entry.options.get(CONF_NEST_PROXY_ENABLE, False)
             ): bool,
-            vol.Optional(
-                CONF_NEST_PROXY_PORT,
-                default=self.config_entry.options.get(CONF_NEST_PROXY_PORT, PROXY_PORT)
-            ): int,
-            vol.Optional(
-                CONF_NEST_UPSTREAM,
-                default=self.config_entry.options.get(CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM)
-            ): vol.In(NEST_UPSTREAMS)
         })
 
         return self.async_show_form(
             step_id="init",
             data_schema=data_schema,
+            last_step=False,
+        )
+
+    async def async_step_configure_upstream(self, user_input=None):
+        """Manage the options."""
+        if user_input is not None:
+            self.options.update(user_input)
+            return self.async_create_entry(title="", data=self.options)
+
+        use_nest_proxy = self.options.get(CONF_NEST_PROXY_ENABLE, False)
+        upstreams = NEST_ALL_UPSTREAMS if use_nest_proxy else [NEST_NULL_UPSTREAM]
+
+        data_schema = vol.Schema({
+            vol.Required(
+                CONF_NEST_UPSTREAM
+            ): SelectSelector(SelectSelectorConfig(options=upstreams, mode=SelectSelectorMode.DROPDOWN))
+        })
+
+        return self.async_show_form(
+            step_id="configure_upstream",
+            data_schema=data_schema,
+            last_step=True,
         )
 
 
