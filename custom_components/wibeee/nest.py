@@ -1,5 +1,4 @@
 import json
-import re
 import logging
 from typing import Callable, Dict, Tuple, NamedTuple, Awaitable, Optional
 from urllib.parse import parse_qsl
@@ -64,39 +63,31 @@ async def get_nest_proxy(
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, close_session)
 
-    def nest_forward(decode_data: Callable[[web.Request, Optional[str]], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
+    def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:
-            # Wibeee sometimes sends garbage that we can't parse. capture that rubbish
-            # here so that we can send it off to Wibeee Cloud when forwarding below.
-            req_body = (await req.text()) if req.can_read_body else None
-
-            mac_addr, push_data = await decode_data(req, req_body)
+            mac_addr, push_data = await decode_data(req)
             device_info = nest_proxy.get_device_info(mac_addr)
 
             if device_info is None:
-                LOGGER.debug("Ignoring unexpected push data from %s received as %s %s: %s", mac_addr, req.method, req.path, push_data)
+                LOGGER.debug("Ignoring unexpected push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
                 return web.Response(status=200)
 
-            LOGGER.debug("Updating sensors using push data from %s received as %s %s: %s", mac_addr, req.method, req.path, push_data)
             device_info.handle_push_data(push_data)
 
             if device_info.upstream == NEST_NULL_UPSTREAM:
                 # don't send to any upstream.
+                LOGGER.debug("Processing local-only push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
                 return web.Response(status=200)
 
             url = f'{device_info.upstream}{req.path_qs}'
-            try:
-                LOGGER.debug("Forwarding push data from %s using %s %s: %s", mac_addr, req.method, url, req_body)
-                res = await session.request(req.method, url, data=req_body)
-                res_body = await res.read()
-                if res.status != 200:
-                    LOGGER.error('Wibeee Cloud returned %d for forwarded request: %s', res.status, res_body)
+            req_body = (await req.read()) if req.can_read_body else None
 
-                return web.Response(status=res.status, headers=res.headers, body=res_body)
+            res = await session.request(req.method, url, data=req_body, headers=req.headers)
+            res_body = await res.read()
+            if res.status != 200:
+                LOGGER.error('Wibeee Cloud returned %d: %s', res.status, res_body)
 
-            except aiohttp.ClientError as e:
-                LOGGER.error('Wibeee Cloud HTTP error during %d %s', req.method, req.path, exc_info=e)
-                return web.Response(status=200)
+            return web.Response(headers=res.headers, body=res_body)
 
         return handler
 
@@ -128,27 +119,21 @@ async def get_nest_proxy(
     return nest_proxy
 
 
-async def extract_query_params(req: web.Request, body: Optional[str]) -> Tuple[str, Dict]:
+async def extract_query_params(req: web.Request) -> Tuple[str, Dict]:
     """Extracts Wibeee data from query params."""
     query = {k: v for k, v in parse_qsl(req.query_string)}
     return query['mac'], query
 
 
-async def extract_json_body(req: web.Request, body: Optional[str]) -> Tuple[Optional[str], Dict]:
+async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict]:
     """Extracts Wibeee data from JSON request body."""
+    body = (await req.text()) if req.can_read_body else None
     LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
     try:
-        body = {} if body is None else json.loads(body)
+        body = json.loads(body)
         return body.get('mac', None), body
 
     except json.decoder.JSONDecodeError as e:
-        # Wibeee will send invalid JSON at times. make a last-ditch attempt to extract the
-        # MAC address so that the forwarding code can work out what upstream to send it to.
-        m = re.match('^{"mac":"(\\w{12})"', body)
-        if m:
-            LOGGER.debug("Worked around invalid JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
-            return m[1], {}
-
         LOGGER.error("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
         return None, {}
 
