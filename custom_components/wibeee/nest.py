@@ -75,7 +75,7 @@ async def get_nest_proxy(
             res = await session.request(req.method, url, data=req_body, headers=req.headers)
             res_body = await res.read()
             if res.status != 200:
-                LOGGER.error('Wibeee Cloud returned %d: %s', res.status, res_body)
+                LOGGER.warning('Wibeee Cloud returned %d: %s', res.status, res_body)
 
             return web.Response(headers=res.headers, body=res_body)
 
@@ -124,7 +124,7 @@ async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict]:
         return body.get('mac', None), body
 
     except json.decoder.JSONDecodeError as e:
-        LOGGER.error("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
+        LOGGER.debug("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
         return None, {}
 
 
