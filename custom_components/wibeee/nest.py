@@ -70,7 +70,7 @@ async def get_nest_proxy(
             url = f'{device_info.upstream}{req.path_qs}'
             req_body = (await req.read()) if req.can_read_body else None
 
-            res = await session.request(req.method, url, data=req_body)
+            res = await session.request(req.method, url, data=req_body, **req.headers)
             res_body = await res.read()
 
             return web.Response(headers=res.headers, body=res_body)
@@ -79,7 +79,10 @@ async def get_nest_proxy(
 
     app = aiohttp.web.Application()
     app.add_routes([
+        web.get('/Wibeee/receiverAvg', nest_forward(extract_query_params)),
         web.get('/Wibeee/receiverLeap', nest_forward(extract_query_params)),
+        web.post('/Wibeee/receiverAvgPost', nest_forward(extract_json_body)),
+        web.post('/Wibeee/receiverJSON', nest_forward(extract_json_body)),
         web.route('*', '/{anypath:.*}', unknown_path_handler),
     ])
 
@@ -111,9 +114,9 @@ async def extract_query_params(req: web.Request) -> Tuple[str, Dict]:
 async def extract_json_body(req: web.Request) -> Tuple[str, Dict]:
     """Extracts Wibeee data from JSON request body."""
     body = await req.json()
-    return body.mac, body
+    return body.get('mac', None), body
 
 
 async def unknown_path_handler(req: web.Request) -> web.StreamResponse:
-    LOGGER.debug("Ignoring pushed data to unknown path %s", req.path)
+    LOGGER.debug("Ignoring unexpected %s %s", req.method, req.path)
     return web.Response(status=200)
