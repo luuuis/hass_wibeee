@@ -17,6 +17,7 @@ import aiohttp
 from aiohttp import web
 from aiohttp.web_routedef import _HandlerType
 
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import HomeAssistant
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 
@@ -49,19 +50,8 @@ async def get_nest_proxy(
         hass: HomeAssistant,
         local_port=8600,
 ) -> NestProxy:
+    session = async_get_clientsession(hass)
     nest_proxy = NestProxy()
-
-    # disable persistent HTTP connections as the Wibeee Cloud will otherwise
-    # time out our connections, causing a ServerDisconnectedError below.
-    connector = aiohttp.TCPConnector(force_close=True)
-    session = aiohttp.ClientSession(connector=connector)
-
-    @callback
-    def close_session(ev: EventType) -> None:
-        session.detach()
-        connector.close()
-
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, close_session)
 
     def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:
