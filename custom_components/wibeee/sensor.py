@@ -200,9 +200,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     if use_nest_proxy:
         # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
         # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
-        await get_nest_proxy(
-            hass
-        )
+        await get_nest_proxy(hass)
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
     device = await api.async_fetch_device_info(retries=5)

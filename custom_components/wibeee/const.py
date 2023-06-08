@@ -4,7 +4,6 @@ from homeassistant.helpers.selector import SelectOptionDict
 
 DOMAIN = 'wibeee'
 NEST_DEFAULT_UPSTREAM = 'http://nest-ingest.wibeee.com'
-PROXY_PORT = 8600
 
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=15)
 DEFAULT_TIMEOUT = timedelta(seconds=10)
