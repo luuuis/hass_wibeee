@@ -171,9 +171,7 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, sensors: list['Wibe
 
 async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device, sensors: list['WibeeeSensor']):
     mac_address = device['macAddr']
-    nest_proxy = await get_nest_proxy(
-        hass
-    )
+    nest_proxy = await get_nest_proxy(hass)
 
     def nest_push_param(s: WibeeeSensor) -> str:
         return s.nest_push_param
@@ -184,8 +182,7 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
 
-    # default to Wibeee Nest for entries saved by previous versions
-    upstream = entry.options.get(CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM)
+    upstream = entry.options.get(CONF_NEST_UPSTREAM)
     nest_proxy.register_device(mac_address, on_pushed_data, upstream)
     return unregister_listener
 
