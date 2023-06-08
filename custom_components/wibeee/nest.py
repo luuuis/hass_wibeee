@@ -8,7 +8,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import singleton
 from homeassistant.helpers.typing import EventType
 
-from const import NEST_NULL_UPSTREAM
+from .const import NEST_NULL_UPSTREAM
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ async def get_nest_proxy(
 
             device_info.handle_push_data(push_data)
 
-            if device_info.upstream == NEST_NULL_UPSTREAM['value']:
+            if device_info.upstream == NEST_NULL_UPSTREAM:
                 # don't send to any upstream.
                 return web.Response(status=200)
 
@@ -80,8 +80,6 @@ async def get_nest_proxy(
     app = aiohttp.web.Application()
     app.add_routes([
         web.get('/Wibeee/receiverLeap', nest_forward(extract_query_params)),
-        web.get('/Wibeee/receiverAvg', nest_forward(extract_query_params)),
-        web.get('/Wibeee/receiverJSON', nest_forward(extract_json_body)),
         web.route('*', '/{anypath:.*}', unknown_path_handler),
     ])
 
@@ -117,5 +115,5 @@ async def extract_json_body(req: web.Request) -> Tuple[str, Dict]:
 
 
 async def unknown_path_handler(req: web.Request) -> web.StreamResponse:
-    LOGGER.warning('Unable to handle request to %s', req.path)
-    pass
+    LOGGER.debug("Ignoring pushed data to unknown path %s", req.path)
+    return web.Response(status=200)

@@ -50,9 +50,9 @@ from .const import (
     DOMAIN,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
-    CONF_NEST_PROXY_ENABLE,
     CONF_NEST_UPSTREAM,
     NEST_DEFAULT_UPSTREAM,
+    NEST_PROXY_DISABLED,
 )
 from .nest import get_nest_proxy
 from .util import short_mac
@@ -198,7 +198,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     host = entry.data[CONF_HOST]
     scan_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds()))
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
-    use_nest_proxy = entry.options.get(CONF_NEST_PROXY_ENABLE)
+    use_nest_proxy = entry.options.get(CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED) != NEST_PROXY_DISABLED
 
     if use_nest_proxy:
         # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml

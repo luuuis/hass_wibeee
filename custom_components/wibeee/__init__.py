@@ -8,8 +8,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .api import WibeeeAPI
-from .const import (DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_TIMEOUT)
+from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,3 +57,24 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Update options."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    # Migrate from "Use Nest Proxy" checkbox to "Nest Cloud Service" select list
+    if config_entry.version == 1:
+        v1_conf_nest_proxy_enable = 'nest_proxy_enable'  # v1 config option that is no longer used.
+
+        options = config_entry.options
+        use_nest_proxy = options.get(v1_conf_nest_proxy_enable, False)
+        nest_upstream = NEST_DEFAULT_UPSTREAM if use_nest_proxy else NEST_PROXY_DISABLED
+
+        new_options = {k: v for k, v in options.items() if k != v1_conf_nest_proxy_enable} | {CONF_NEST_UPSTREAM: nest_upstream}
+
+        config_entry.version = 2
+        hass.config_entries.async_update_entry(config_entry, options=new_options)
+        _LOGGER.info("Migration to version %s successful", config_entry.version)
+
+    return True

@@ -21,19 +21,10 @@
     "step": {
       "init": {
         "title": "Wibeee integration options",
-        "description": "Customize the integration.",
+        "description": "Configure Polling and and Local Push",
         "data": {
-          "scan_interval": "Device polling interval in seconds.",
-          "nest_proxy_enable": "Enable Nest Proxy",
-          "nest_upstream_url": "URL of the Nest upstream",
-          "nest_upstream_port": "Port of the Nest upstream"
-        }
-      },
-      "configure_upstream": {
-        "title": "Configure Nest Cloud service",
-        "description": "Optionally choose which Cloud to upload Wibeee data to.",
-        "data": {
-          "nest_upstream": "Nest Cloud service"
+          "scan_interval": "Device polling interval in seconds",
+          "nest_upstream": "Nest Cloud service to use"
         }
       }
     }
