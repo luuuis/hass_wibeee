@@ -1,5 +1,6 @@
+import json
 import logging
-from typing import Callable, Dict, Tuple, NamedTuple, Awaitable
+from typing import Callable, Dict, Tuple, NamedTuple, Awaitable, Optional
 from urllib.parse import parse_qsl
 
 from homeassistant.components.network import async_get_source_ip
@@ -16,7 +17,6 @@ import aiohttp
 from aiohttp import web
 from aiohttp.web_routedef import _HandlerType
 
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import HomeAssistant
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 
@@ -49,8 +49,19 @@ async def get_nest_proxy(
         hass: HomeAssistant,
         local_port=8600,
 ) -> NestProxy:
-    session = async_get_clientsession(hass)
     nest_proxy = NestProxy()
+
+    # disable persistent HTTP connections as the Wibeee Cloud will otherwise
+    # time out our connections, causing a ServerDisconnectedError below.
+    connector = aiohttp.TCPConnector(force_close=True)
+    session = aiohttp.ClientSession(connector=connector)
+
+    @callback
+    def close_session(ev: EventType) -> None:
+        session.detach()
+        connector.close()
+
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, close_session)
 
     def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:
@@ -58,20 +69,23 @@ async def get_nest_proxy(
             device_info = nest_proxy.get_device_info(mac_addr)
 
             if device_info is None:
-                LOGGER.debug("Ignoring pushed data from %s: %s", mac_addr, push_data)
-                return web.Response(status=403)
+                LOGGER.debug("Ignoring unexpected push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
+                return web.Response(status=200)
 
             device_info.handle_push_data(push_data)
 
             if device_info.upstream == NEST_NULL_UPSTREAM:
                 # don't send to any upstream.
+                LOGGER.debug("Processing local-only push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
                 return web.Response(status=200)
 
             url = f'{device_info.upstream}{req.path_qs}'
             req_body = (await req.read()) if req.can_read_body else None
 
-            res = await session.request(req.method, url, data=req_body, **req.headers)
+            res = await session.request(req.method, url, data=req_body, headers=req.headers)
             res_body = await res.read()
+            if res.status != 200:
+                LOGGER.error('Wibeee Cloud returned %d: %s', res.status, res_body)
 
             return web.Response(headers=res.headers, body=res_body)
 
@@ -111,10 +125,17 @@ async def extract_query_params(req: web.Request) -> Tuple[str, Dict]:
     return query['mac'], query
 
 
-async def extract_json_body(req: web.Request) -> Tuple[str, Dict]:
+async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict]:
     """Extracts Wibeee data from JSON request body."""
-    body = await req.json()
-    return body.get('mac', None), body
+    body = (await req.text()) if req.can_read_body else None
+    LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
+    try:
+        body = json.loads(body)
+        return body.get('mac', None), body
+
+    except json.decoder.JSONDecodeError as e:
+        LOGGER.error("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
+        return None, {}
 
 
 async def unknown_path_handler(req: web.Request) -> web.StreamResponse:

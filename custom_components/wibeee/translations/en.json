@@ -24,7 +24,7 @@
         "description": "Configure Polling and and Local Push",
         "data": {
           "scan_interval": "Device polling interval in seconds",
-          "nest_upstream": "Nest Cloud service to use"
+          "nest_upstream": "Cloud service to upload data to"
         }
       }
     }
