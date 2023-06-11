@@ -82,7 +82,7 @@ async def get_nest_proxy(
             url = f'{device_info.upstream}{req.path_qs}'
             req_body = (await req.read()) if req.can_read_body else None
 
-            res = await session.request(req.method, url, data=req_body, headers=req.headers)
+            res = await session.request(req.method, url, data=req_body)
             res_body = await res.read()
             if res.status != 200:
                 LOGGER.warning('Wibeee Cloud returned %d: %s', res.status, res_body)
