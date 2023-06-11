@@ -63,15 +63,20 @@ async def get_nest_proxy(
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, close_session)
 
-    def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
+    def nest_forward(decode_data: Callable[[web.Request, Optional[str]], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:
-            mac_addr, push_data = await decode_data(req)
+            # Wibeee sometimes sends garbage that we can't parse. capture that rubbish
+            # here so that we can send it off to Wibeee Cloud when forwarding below.
+            req_body = (await req.text()) if req.can_read_body else None
+
+            mac_addr, push_data = await decode_data(req, req_body)
             device_info = nest_proxy.get_device_info(mac_addr)
 
             if device_info is None:
-                LOGGER.debug("Ignoring unexpected push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
+                LOGGER.debug("Ignoring unexpected push data from %s received as %s %s: %s", mac_addr, req.method, req.path, push_data)
                 return web.Response(status=404)  # Not Found
 
+            LOGGER.debug("Updating sensors using push data from %s received as %s %s: %s", mac_addr, req.method, req.path, push_data)
             device_info.handle_push_data(push_data)
 
             if device_info.upstream == NEST_NULL_UPSTREAM:
@@ -80,14 +85,18 @@ async def get_nest_proxy(
                 return web.Response(status=202)  # Accepted
 
             url = f'{device_info.upstream}{req.path_qs}'
-            req_body = (await req.read()) if req.can_read_body else None
+            try:
+                LOGGER.debug("Forwarding push data from %s using %s %s: %s", mac_addr, req.method, url, req_body)
+                res = await session.request(req.method, url, data=None if req.path == req.path_qs else json.dumps(push_data))
+                res_body = await res.read()
+                if res.status < 200 or res.status > 299:
+                    LOGGER.warning('Wibeee Cloud returned %d for forwarded request: %s', res.status, res_body)
 
-            res = await session.request(req.method, url, data=req_body)
-            res_body = await res.read()
-            if res.status < 200 or res.status > 299:
-                LOGGER.warning('Wibeee Cloud returned %d: %s', res.status, res_body)
+                return web.Response(status=res.status, headers=res.headers, body=res_body)
 
-            return web.Response(headers=res.headers, body=res_body)
+            except aiohttp.ClientError as e:
+                LOGGER.error('Wibeee Cloud HTTP error during %d %s', req.method, req.path, exc_info=e)
+                return web.Response(status=500)  # Server Error
 
         return handler
 
@@ -119,23 +128,37 @@ async def get_nest_proxy(
     return nest_proxy
 
 
-async def extract_query_params(req: web.Request) -> Tuple[str, Dict]:
+async def extract_query_params(req: web.Request, body: Optional[str]) -> Tuple[str, Dict]:
     """Extracts Wibeee data from query params."""
     query = {k: v for k, v in parse_qsl(req.query_string)}
     return query['mac'], query
 
 
-async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict]:
+async def extract_json_body(req: web.Request, body: Optional[str]) -> Tuple[Optional[str], Dict]:
     """Extracts Wibeee data from JSON request body."""
-    body = (await req.text()) if req.can_read_body else None
     LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
+    parsed_body = None
+    parse_error = None
     try:
-        body = json.loads(body)
-        return body.get('mac', None), body
+        parsed_body = {} if body is None else json.loads(body)
 
     except json.decoder.JSONDecodeError as e:
-        LOGGER.debug("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
+        # Wibeee will send invalid JSON at times. make a desperate attempt to fix the JSON and try again. (╯°□°）╯︵ ┻━┻
+        fixed_body = body.replace(',,', ',').replace('""', '","')
+        if fixed_body != body:
+            try:
+                parsed_body = json.loads(fixed_body)
+                LOGGER.debug("Fixed invalid JSON in %s %s: %s", req.method, req.path, body, exc_info=e)
+            except json.decoder.JSONDecodeError:
+                parse_error = e
+        else:
+            parse_error = e
+
+    if parse_error:
+        LOGGER.debug("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=parse_error)
         return None, {}
+
+    return parsed_body.get('mac', None), parsed_body
 
 
 async def unknown_path_handler(req: web.Request) -> web.StreamResponse:
