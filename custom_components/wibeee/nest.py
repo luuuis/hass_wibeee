@@ -70,21 +70,21 @@ async def get_nest_proxy(
 
             if device_info is None:
                 LOGGER.debug("Ignoring unexpected push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
-                return web.Response(status=200)
+                return web.Response(status=404)  # Not Found
 
             device_info.handle_push_data(push_data)
 
             if device_info.upstream == NEST_NULL_UPSTREAM:
                 # don't send to any upstream.
-                LOGGER.debug("Processing local-only push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
-                return web.Response(status=200)
+                LOGGER.debug("Accepted local-only push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
+                return web.Response(status=202)  # Accepted
 
             url = f'{device_info.upstream}{req.path_qs}'
             req_body = (await req.read()) if req.can_read_body else None
 
             res = await session.request(req.method, url, data=req_body)
             res_body = await res.read()
-            if res.status != 200:
+            if res.status < 200 or res.status > 299:
                 LOGGER.warning('Wibeee Cloud returned %d: %s', res.status, res_body)
 
             return web.Response(headers=res.headers, body=res_body)
