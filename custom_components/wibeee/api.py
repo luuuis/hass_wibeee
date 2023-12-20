@@ -44,9 +44,11 @@ class WibeeeAPI(object):
     async def async_fetch_status(self, device: DeviceInfo, var_names: list[str], retries: int = 0) -> dict[str, any]:
         """Fetches the status XML from Wibeee as a dict, optionally retries"""
         if device.use_values2:
-            # request the specific vars we need, otherwise Wibeee will send down everything including WiFi keys.
-            var_ids = [f"{quote_plus(device.id)}.{name}" for name in var_names]
-            values2_response = await self.async_fetch_url(f'http://{self.host}/services/user/values2.xml?var={"&".join(var_ids)}', retries)
+            device_id = quote_plus(device.id)
+            # Temporarily disabled: request the specific vars we need, otherwise Wibeee will send down everything including WiFi keys.
+            # var_ids = [f"{device_id}.{name}" for name in var_names]
+            # values2_response_ = await self.async_fetch_url(f'http://{self.host}/services/user/values2.xml?var={"&".join(var_ids)}', retries)
+            values2_response = await self.async_fetch_url(f'http://{self.host}/services/user/values2.xml?id={device_id}', retries)
             return values2_response['values']
         else:
             status_response = await self.async_fetch_url(f'http://{self.host}/en/status.xml', retries)
