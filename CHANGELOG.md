@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-beta.5](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.4...v3.4.0-beta.5) (2023-12-20)
+
+
+### Bug Fixes
+
+* **api:** use var= instead of id= in values2.xml API ([dddfb46](https://github.com/luuuis/hass_wibeee/commit/dddfb461d1a231f4e808aede1ce2a22c91543709))
+
 ## [3.4.0-beta.4](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.3...v3.4.0-beta.4) (2023-12-19)
 
 ## [3.4.0-beta.3](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.2...v3.4.0-beta.3) (2023-12-19)
