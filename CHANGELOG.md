@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-beta.4](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.3...v3.4.0-beta.4) (2023-12-19)
+
+## [3.4.0-beta.3](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.2...v3.4.0-beta.3) (2023-12-19)
+
+
+### Bug Fixes
+
+* **api:** async_fetch_status correctly handles values2.xml response try 2 ([4ebad05](https://github.com/luuuis/hass_wibeee/commit/4ebad056a6815244845380e7927f76eecc512f96))
+
+## [3.4.0-beta.2](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.1...v3.4.0-beta.2) (2023-12-19)
+
+
+### Bug Fixes
+
+* **api:** async_fetch_status correctly handles values2.xml response ([df4be77](https://github.com/luuuis/hass_wibeee/commit/df4be7775de91a855e923f50fc39192b71711584))
+
+## [3.4.0-beta.1](https://github.com/luuuis/hass_wibeee/compare/v3.4.0-beta.0...v3.4.0-beta.1) (2023-12-19)
+
+
+### Bug Fixes
+
+* **api:** API address is /services/user/values2.xml ([6922437](https://github.com/luuuis/hass_wibeee/commit/692243738ed83bad61ad43cd7061a7395b3247c8))
+
+## [3.4.0-beta.0](https://github.com/luuuis/hass_wibeee/compare/v3.3.0...v3.4.0-beta.0) (2023-12-18)
+
+
+### Features
+
+* **api:** support values2.xml API used by firmware >= 4.4.171 ([2b0577c](https://github.com/luuuis/hass_wibeee/commit/2b0577c4e7e0a15189200ae49f396aa1b8b065cb))
+
 ## [3.3.0](https://github.com/luuuis/hass_wibeee/compare/v3.2.4...v3.3.0) (2023-09-25)
 
 
