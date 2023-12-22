@@ -9,9 +9,14 @@ import xmltodict
 from homeassistant.helpers.typing import StateType
 from packaging import version
 
+from util import scrub_xml_text_naively, scrub_dict_top_level
+
 _LOGGER = logging.getLogger(__name__)
 
 StatusResponse = dict[str, StateType]
+
+_VALUES2_SCRUB_KEYS = ['securKey', 'ssid']
+"""Values that we'll attempt to scrub from the values2.xml response."""
 
 
 class DeviceInfo(NamedTuple):
@@ -44,12 +49,12 @@ class WibeeeAPI(object):
     async def async_fetch_status(self, device: DeviceInfo, var_names: list[str], retries: int = 0) -> dict[str, any]:
         """Fetches the status XML from Wibeee as a dict, optionally retries"""
         if device.use_values2:
-            device_id = quote_plus(device.id)
-            # Temporarily disabled: request the specific vars we need, otherwise Wibeee will send down everything including WiFi keys.
-            # var_ids = [f"{device_id}.{name}" for name in var_names]
-            # values2_response_ = await self.async_fetch_url(f'http://{self.host}/services/user/values2.xml?var={"&".join(var_ids)}', retries)
-            values2_response = await self.async_fetch_url(f'http://{self.host}/services/user/values2.xml?id={device_id}', retries)
-            return values2_response['values']
+            url = f'http://{self.host}/services/user/values2.xml?id={quote_plus(device.id)}'
+
+            # attempt to scrub WiFi secrets before they make it into logs, etc.
+            values2_response = await self.async_fetch_url(url, retries, _VALUES2_SCRUB_KEYS)
+            return scrub_dict_top_level(_VALUES2_SCRUB_KEYS, values2_response['values'])
+
         else:
             status_response = await self.async_fetch_url(f'http://{self.host}/en/status.xml', retries)
             return status_response['response']
@@ -75,7 +80,7 @@ class WibeeeAPI(object):
             version.parse(device_vars['softVersion']) >= version.parse('4.4.171')
         ) if len(device_vars) == len(var_names) else None
 
-    async def async_fetch_url(self, url, retries: int = 0):
+    async def async_fetch_url(self, url: str, retries: int = 0, scrub_keys: list[str] = []):
         async def fetch_with_retries(try_n):
             if try_n > 0:
                 wait = min(pow(2, try_n) * self.min_wait.total_seconds(), self.max_wait.total_seconds())
@@ -94,7 +99,9 @@ class WibeeeAPI(object):
                     )
 
                 xml_data = await resp.text()
-                _LOGGER.debug("RAW Response from %s: %s)", url, xml_data)
+                if _LOGGER.isEnabledFor(logging.DEBUG):
+                    _LOGGER.debug("RAW Response from %s: %s)", url, scrub_xml_text_naively(scrub_keys, xml_data))
+
                 xml_as_dict = xmltodict.parse(xml_data)
                 return xml_as_dict
 
