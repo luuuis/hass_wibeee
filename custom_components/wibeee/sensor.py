@@ -169,7 +169,7 @@ def get_status_elements(device: DeviceInfo) -> list[StatusElement]:
 
 def update_sensors(sensors, update_source, lookup_key, data):
     sensors_with_updates = [s for s in sensors if lookup_key(s) in data]
-    _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data, sensors_with_updates)
+    _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data)
     for s in sensors_with_updates:
         value = data.get(lookup_key(s))
         s.update_value(value, update_source)
