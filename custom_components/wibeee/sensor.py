@@ -191,8 +191,8 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo,
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
 
-async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device, sensors: list['WibeeeSensor']):
-    mac_address = device['macAddr']
+async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device: DeviceInfo, sensors: list['WibeeeSensor']):
+    mac_address = device.macAddr
     nest_proxy = await get_nest_proxy(hass)
 
     def nest_push_param(s: WibeeeSensor) -> str:
