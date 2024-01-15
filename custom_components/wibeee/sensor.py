@@ -168,9 +168,12 @@ def get_status_elements(device: DeviceInfo) -> list[StatusElement]:
 
 
 def update_sensors(sensors, update_source, lookup_key, data):
-    sensors_with_updates = {sensor: data[key] for sensor, key in [(s, lookup_key(s)) for s in sensors]}
-    _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data)
-    for s, value in sensors_with_updates.items():
+    if _LOGGER.isEnabledFor(logging.DEBUG):
+        sensors_with_updates = [s for s in sensors if lookup_key(s) in data]
+        _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data)
+
+    for s in sensors:
+        value = data.get(lookup_key(s), STATE_UNAVAILABLE)
         s.update_value(value, update_source)
 
 
@@ -182,9 +185,9 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo,
             fetched = await api.async_fetch_status(device, [s.status_xml_param for s in sensors], retries=3)
             update_sensors(sensors, source, lambda s: s.status_xml_param, fetched)
         except Exception as err:
-            update_sensors(sensors, source, lambda s: '*', {'*': STATE_UNAVAILABLE})
             if now is None:
                 raise PlatformNotReady from err
+            update_sensors(sensors, source, lambda s: '*', {'*': STATE_UNAVAILABLE})
 
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
@@ -194,7 +197,8 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
     nest_proxy = await get_nest_proxy(hass)
 
     def on_pushed_data(pushed_data: dict) -> None:
-        update_sensors(sensors, 'Nest push', lambda s: s.nest_push_param, pushed_data)
+        pushed_sensors = [s for s in sensors if s.nest_push_param in pushed_data]
+        update_sensors(pushed_sensors, 'Nest push', lambda s: s.nest_push_param, pushed_data)
 
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
@@ -267,10 +271,10 @@ class WibeeeSensor(SensorEntity):
         self.nest_push_param = f"{sensor_type.nest_push_prefix}{'t' if sensor_phase == '4' else sensor_phase}"
 
     @callback
-    def update_value(self, value, update_source='') -> None:
+    def update_value(self, value: StateType, update_source: str = '') -> None:
         """Updates this sensor from the fetched status value."""
         if self.enabled:
-            self._attr_native_value = None if value is STATE_UNAVAILABLE else value
+            self._attr_native_value = value
             self._attr_available = value is not STATE_UNAVAILABLE
             self.async_schedule_update_ha_state()
             _LOGGER.debug("Updating from %s: %s", update_source, self)
