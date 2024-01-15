@@ -168,26 +168,24 @@ def get_status_elements(device: DeviceInfo) -> list[StatusElement]:
 
 
 def update_sensors(sensors, update_source, lookup_key, data):
-    sensors_with_updates = [s for s in sensors if lookup_key(s) in data]
+    sensors_with_updates = {sensor: data[key] for sensor, key in [(s, lookup_key(s)) for s in sensors]}
     _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data)
-    for s in sensors_with_updates:
-        value = data.get(lookup_key(s))
+    for s, value in sensors_with_updates.items():
         s.update_value(value, update_source)
 
 
 def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo, sensors: list['WibeeeSensor'], scan_interval: timedelta):
-    def status_xml_param(sensor: WibeeeSensor) -> str:
-        return sensor.status_xml_param
+    source = 'values2.xml' if device.use_values2 else 'status.xml'
 
     async def fetching_data(now=None):
         try:
             fetched = await api.async_fetch_status(device, [s.status_xml_param for s in sensors], retries=3)
-            update_sensors(sensors, 'values2.xml' if device.use_values2 else 'status.xml', status_xml_param, fetched)
+            update_sensors(sensors, source, lambda s: s.status_xml_param, fetched)
         except Exception as err:
+            update_sensors(sensors, source, lambda s: '*', {'*': STATE_UNAVAILABLE})
             if now is None:
                 raise PlatformNotReady from err
 
-    # update_sensors(sensors, 'initial status.xml', status_xml_param, initial_status)
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
 
@@ -195,11 +193,8 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
     mac_address = device.macAddr
     nest_proxy = await get_nest_proxy(hass)
 
-    def nest_push_param(s: WibeeeSensor) -> str:
-        return s.nest_push_param
-
     def on_pushed_data(pushed_data: dict) -> None:
-        update_sensors(sensors, 'Nest push', nest_push_param, pushed_data)
+        update_sensors(sensors, 'Nest push', lambda s: s.nest_push_param, pushed_data)
 
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
@@ -275,8 +270,8 @@ class WibeeeSensor(SensorEntity):
     def update_value(self, value, update_source='') -> None:
         """Updates this sensor from the fetched status value."""
         if self.enabled:
-            self._attr_native_value = value
-            self._attr_available = self.state is not STATE_UNAVAILABLE
+            self._attr_native_value = None if value is STATE_UNAVAILABLE else value
+            self._attr_available = value is not STATE_UNAVAILABLE
             self.async_schedule_update_ha_state()
             _LOGGER.debug("Updating from %s: %s", update_source, self)
 
