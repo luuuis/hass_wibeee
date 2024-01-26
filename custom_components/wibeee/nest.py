@@ -98,6 +98,7 @@ async def get_nest_proxy(
 
     app = aiohttp.web.Application()
     app.add_routes([
+        web.get('/Wibeee/receiver', nest_forward(extract_query_params)),
         web.get('/Wibeee/receiverAvg', nest_forward(extract_query_params)),
         web.get('/Wibeee/receiverLeap', nest_forward(extract_query_params)),
         web.post('/Wibeee/receiverAvgPost', nest_forward(extract_json_body)),
