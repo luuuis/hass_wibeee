@@ -171,12 +171,11 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo,
         fetched = {}
         try:
             fetched = await api.async_fetch_values(device.id, retries=3)
-            update_sensors(sensors, 'values.xml', poll_xml_param, fetched)
         except Exception as err:
             if now is None:
                 raise PlatformNotReady from err
 
-        update_sensors(sensors, source, lambda s: s.status_xml_param, fetched)
+        update_sensors(sensors, 'values.xml', poll_xml_param, fetched)
 
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
