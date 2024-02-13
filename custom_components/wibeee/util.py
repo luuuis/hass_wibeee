@@ -19,13 +19,3 @@ def scrub_values_xml(keys: list[str], xml_text: bytes) -> str:
             v.text = '*MASKED*'
 
     return etree.tostring(tree)
-
-
-def scrub_dict_top_level(keys: list[str], values: dict) -> dict:
-    """Scrubs values from """
-    scrubbed_values = dict(values)
-    for scrub_key in keys:
-        if scrub_key in values:
-            scrubbed_values.update({scrub_key: '*MASKED*'})
-
-    return scrubbed_values

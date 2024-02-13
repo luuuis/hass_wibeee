@@ -6,9 +6,10 @@ from urllib.parse import quote_plus
 
 import aiohttp
 import xmltodict
+from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.helpers.typing import StateType
 
-from .util import scrub_values_xml, scrub_dict_top_level
+from .util import scrub_values_xml
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class WibeeeAPI(object):
         values_vars = {var['id']: var['value'] for var in values['values']['variable']}
 
         # attempt to scrub WiFi secrets before they make it into logs, etc.
-        return scrub_dict_top_level(_VALUES_SCRUB_KEYS, values_vars)
+        return async_redact_data(values_vars, _VALUES_SCRUB_KEYS)
 
     async def async_fetch_device_info(self, retries: int = 0) -> Optional[DeviceInfo]:
         # <devices><id>WIBEEE</id></devices>

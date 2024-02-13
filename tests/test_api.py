@@ -60,7 +60,8 @@ async def test_fetch_values(caplog):
                 'softVersion': '4.4.124',
                 'model': 'WB3',
                 'ipAddr': '10.10.10.100',
-                'securKey': '*MASKED*',
+                'ssid': '**REDACTED**',
+                'securKey': '**REDACTED**',
                 'vrms2': '235.06',
             }).items()
 
