@@ -8,7 +8,7 @@ import aiohttp
 import xmltodict
 from homeassistant.helpers.typing import StateType
 
-from .util import scrub_xml_text_naively, scrub_dict_top_level
+from .util import scrub_values_xml, scrub_dict_top_level
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class WibeeeAPI(object):
         else:
             query = f'id={quote_plus(device_id)}'
 
-        values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?{query}', retries)
+        values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?{query}', retries, scrub_keys=_VALUES_SCRUB_KEYS)
 
         # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
         values_vars = {var['id']: var['value'] for var in values['values']['variable']}
@@ -95,7 +95,7 @@ class WibeeeAPI(object):
 
                 xml_data = await resp.text()
                 if _LOGGER.isEnabledFor(logging.DEBUG):
-                    _LOGGER.debug("RAW Response from %s: %s)", url, scrub_xml_text_naively(scrub_keys, xml_data))
+                    _LOGGER.debug("RAW Response from %s: %s)", url, scrub_values_xml(scrub_keys, await resp.read()))
 
                 xml_as_dict = xmltodict.parse(xml_data)
                 return xml_as_dict

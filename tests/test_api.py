@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import timedelta
 
@@ -41,7 +42,8 @@ async def test_fetch_device_info():
 
 
 @pytest.mark.asyncio
-async def test_fetch_values():
+async def test_fetch_values(caplog):
+    caplog.set_level(logging.DEBUG)
     async with aiohttp.ClientSession() as session:
         with aioresponses() as m:
             m.get(
@@ -61,3 +63,11 @@ async def test_fetch_values():
                 'securKey': '*MASKED*',
                 'vrms2': '235.06',
             }).items()
+
+            secrets = {
+                'securKey': 'MY_WIFI_PASS',
+                'ssid': 'MY_SSID',
+            }
+            for k, v in secrets.items():
+                assert k in caplog.text
+                assert v not in caplog.text
