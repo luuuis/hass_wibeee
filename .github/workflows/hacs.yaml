@@ -2,6 +2,8 @@ name: Validate with HACS Action
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
