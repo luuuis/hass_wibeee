@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import timedelta
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Dict
 from urllib.parse import quote_plus
 
 import aiohttp
@@ -14,8 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 StatusResponse = dict[str, StateType]
 
-_VALUES2_SCRUB_KEYS = ['securKey', 'ssid']
-"""Values that we'll attempt to scrub from the values2.xml response."""
+_VALUES_SCRUB_KEYS = ['securKey', 'ssid']
+"""Values that we'll attempt to scrub from the values.xml response."""
 
 
 class DeviceInfo(NamedTuple):
@@ -43,13 +43,21 @@ class WibeeeAPI(object):
         self.max_wait = min(timedelta(seconds=5), timeout)
         _LOGGER.info("Initializing WibeeeAPI with host: %s, timeout %s, max_wait: %s", host, self.timeout, self.max_wait)
 
-    async def async_fetch_status(self, device: DeviceInfo, var_names: list[str], retries: int = 0) -> dict[str, any]:
-        """Fetches the status XML from Wibeee as a dict, optionally retries"""
-        url = f'http://{self.host}/services/user/values2.xml?id={quote_plus(device.id)}'
+    async def async_fetch_values(self, device_id: str, var_names: list[str] = None, retries: int = 0) -> Dict[str, any]:
+        """Fetches the values from Wibeee as a dict, optionally retries"""
+        if var_names:
+            var_ids = [f"{quote_plus(device_id)}.{quote_plus(var)}" for var in var_names]
+            query = f'var={"&".join(var_ids)}'
+        else:
+            query = f'id={quote_plus(device_id)}'
+
+        values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?{query}', retries)
+
+        # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
+        values_vars = {var['id']: var['value'] for var in values['values']['variable']}
 
         # attempt to scrub WiFi secrets before they make it into logs, etc.
-        values2_response = await self.async_fetch_url(url, retries, _VALUES2_SCRUB_KEYS)
-        return scrub_dict_top_level(_VALUES2_SCRUB_KEYS, values2_response['values'])
+        return scrub_dict_top_level(_VALUES_SCRUB_KEYS, values_vars)
 
     async def async_fetch_device_info(self, retries: int = 0) -> Optional[DeviceInfo]:
         # <devices><id>WIBEEE</id></devices>
@@ -57,11 +65,7 @@ class WibeeeAPI(object):
         device_id = devices['devices']['id']
 
         var_names = ['macAddr', 'softVersion', 'model', 'ipAddr']
-        var_ids = [f"{quote_plus(device_id)}.{name}" for name in var_names]
-        values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?var={"&".join(var_ids)}', retries)
-
-        # <values><variable><id>macAddr</id><value>11:11:11:11:11:11</value></variable></values>
-        device_vars = {var['id']: var['value'] for var in values['values']['variable']}
+        device_vars = await self.async_fetch_values(device_id, var_names, retries)
 
         return DeviceInfo(
             device_id,

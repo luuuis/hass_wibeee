@@ -16,6 +16,7 @@ def read_file(filename: str) -> str:
 
 
 DEVICE_INFO = api.DeviceInfo(id='X', macAddr='111111111111', softVersion='4.4.124', model='WB3', ipAddr='10.10.10.100')
+TIMEOUT = timedelta(seconds=5)
 
 
 @pytest.mark.asyncio
@@ -34,6 +35,29 @@ async def test_fetch_device_info():
                 body=read_file('test_api_values.xml'),
             )
 
-            wibeee = api.WibeeeAPI(session, '1.2.3.4', timeout=timedelta(seconds=5))
+            wibeee = api.WibeeeAPI(session, '1.2.3.4', timeout=TIMEOUT)
             device_info = await wibeee.async_fetch_device_info()
             assert device_info == DEVICE_INFO
+
+
+@pytest.mark.asyncio
+async def test_fetch_values():
+    async with aiohttp.ClientSession() as session:
+        with aioresponses() as m:
+            m.get(
+                "http://1.2.3.4/services/user/values.xml?id=WIBEEE",
+                status=200,
+                body=read_file('test_api_values.xml'),
+            )
+
+            wibeee = api.WibeeeAPI(session, '1.2.3.4', timeout=TIMEOUT)
+            values = await wibeee.async_fetch_values("WIBEEE")
+
+            assert values.items() >= ({
+                'macAddr': '11:11:11:11:11:11',
+                'softVersion': '4.4.124',
+                'model': 'WB3',
+                'ipAddr': '10.10.10.100',
+                'securKey': '*MASKED*',
+                'vrms2': '235.06',
+            }).items()

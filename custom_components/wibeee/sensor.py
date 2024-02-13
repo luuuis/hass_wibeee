@@ -79,7 +79,7 @@ class SensorType(NamedTuple):
     Wibeee supported sensor definition.
     """
     poll_var_prefix: Optional[str]
-    "prefix used for elements in `values2.xml` output (e.g.: 'vrms')"
+    "prefix used for elements in `values.xml` output (e.g.: 'vrms')"
     push_var_prefix: Optional[str]
     "prefix used in Wibeee Nest push requests such as receiverLeap (e.g.: 'v')"
     unique_name: str
@@ -173,8 +173,8 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo,
     async def fetching_data(now=None):
         fetched = {}
         try:
-            fetched = await api.async_fetch_status(device, [s.status_xml_param for s in sensors], retries=3)
-            update_sensors(sensors, 'values2.xml', poll_xml_param, fetched)
+            fetched = await api.async_fetch_values(device.id, retries=3)
+            update_sensors(sensors, 'values.xml', poll_xml_param, fetched)
         except Exception as err:
             if now is None:
                 raise PlatformNotReady from err
@@ -219,7 +219,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     device = await api.async_fetch_device_info(retries=5)
     status_elements = get_status_elements()
 
-    initial_status = await api.async_fetch_status(device, [e.xml_name for e in status_elements], retries=10)
+    initial_status = await api.async_fetch_values(device.id, retries=10)
     sensors = [
         WibeeeSensor(device, e.phase, e.sensor_type, e.xml_name, initial_status.get(e.xml_name))
         for e in status_elements if e.xml_name in initial_status
