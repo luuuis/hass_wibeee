@@ -73,7 +73,7 @@ class WibeeeAPI(object):
             device_vars['macAddr'].replace(':', ''),
             device_vars['softVersion'],
             device_vars['model'],
-            device_vars['ipAddr']
+            device_vars['ipAddr'],
         ) if set(var_names) <= set(device_vars.keys()) else None
 
     async def async_fetch_url(self, url: str, retries: int = 0, scrub_keys: list[str] = []):
