@@ -6,14 +6,15 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "network"
+    "network",
+    "diagnostics"
   ],
   "documentation": "https://github.com/luuuis/hass_wibeee",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/luuuis/hass_wibeee/issues",
   "requirements": [
-    "xmltodict=^0.13.0",
-    "lxml=^5.1.0"
+    "xmltodict==^0.13.0",
+    "lxml==^5.1.0"
   ],
   "version": "3.4.3"
 }
