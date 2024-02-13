@@ -3,5 +3,5 @@
     "render_readme": true,
     "zip_release": true,
     "filename": "hass_wibeee.zip",
-    "homeassistant": "2022.2.0"
+    "homeassistant": "2023.7.3"
 }
