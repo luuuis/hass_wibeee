@@ -7,7 +7,6 @@ from urllib.parse import quote_plus
 import aiohttp
 import xmltodict
 from homeassistant.helpers.typing import StateType
-from packaging import version
 
 from .util import scrub_xml_text_naively, scrub_dict_top_level
 
@@ -30,8 +29,6 @@ class DeviceInfo(NamedTuple):
     "Wibeee Model (single or 3-phase, etc)"
     ipAddr: str
     "IP address"
-    use_values2: bool
-    "Whether to use values2.xml format"
 
 
 class WibeeeAPI(object):
@@ -48,16 +45,11 @@ class WibeeeAPI(object):
 
     async def async_fetch_status(self, device: DeviceInfo, var_names: list[str], retries: int = 0) -> dict[str, any]:
         """Fetches the status XML from Wibeee as a dict, optionally retries"""
-        if device.use_values2:
-            url = f'http://{self.host}/services/user/values2.xml?id={quote_plus(device.id)}'
+        url = f'http://{self.host}/services/user/values2.xml?id={quote_plus(device.id)}'
 
-            # attempt to scrub WiFi secrets before they make it into logs, etc.
-            values2_response = await self.async_fetch_url(url, retries, _VALUES2_SCRUB_KEYS)
-            return scrub_dict_top_level(_VALUES2_SCRUB_KEYS, values2_response['values'])
-
-        else:
-            status_response = await self.async_fetch_url(f'http://{self.host}/en/status.xml', retries)
-            return status_response['response']
+        # attempt to scrub WiFi secrets before they make it into logs, etc.
+        values2_response = await self.async_fetch_url(url, retries, _VALUES2_SCRUB_KEYS)
+        return scrub_dict_top_level(_VALUES2_SCRUB_KEYS, values2_response['values'])
 
     async def async_fetch_device_info(self, retries: int = 0) -> Optional[DeviceInfo]:
         # <devices><id>WIBEEE</id></devices>
@@ -76,8 +68,7 @@ class WibeeeAPI(object):
             device_vars['macAddr'].replace(':', ''),
             device_vars['softVersion'],
             device_vars['model'],
-            device_vars['ipAddr'],
-            version.parse(device_vars['softVersion']) >= version.parse('4.4.171')
+            device_vars['ipAddr']
         ) if set(var_names) <= set(device_vars.keys()) else None
 
     async def async_fetch_url(self, url: str, retries: int = 0, scrub_keys: list[str] = []):

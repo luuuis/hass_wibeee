@@ -15,7 +15,7 @@ def read_file(filename: str) -> str:
         return file.read()
 
 
-DEVICE_INFO = api.DeviceInfo(id='X', macAddr='111111111111', softVersion='4.4.124', model='WB3', ipAddr='10.10.10.100', use_values2=False)
+DEVICE_INFO = api.DeviceInfo(id='X', macAddr='111111111111', softVersion='4.4.124', model='WB3', ipAddr='10.10.10.100')
 
 
 @pytest.mark.asyncio
