@@ -59,7 +59,7 @@ class WibeeeAPI(object):
             status_response = await self.async_fetch_url(f'http://{self.host}/en/status.xml', retries)
             return status_response['response']
 
-    async def async_fetch_device_info(self, retries: int) -> Optional[DeviceInfo]:
+    async def async_fetch_device_info(self, retries: int = 0) -> Optional[DeviceInfo]:
         # <devices><id>WIBEEE</id></devices>
         devices = await self.async_fetch_url(f'http://{self.host}/services/user/devices.xml', retries)
         device_id = devices['devices']['id']
@@ -78,7 +78,7 @@ class WibeeeAPI(object):
             device_vars['model'],
             device_vars['ipAddr'],
             version.parse(device_vars['softVersion']) >= version.parse('4.4.171')
-        ) if len(device_vars) == len(var_names) else None
+        ) if set(var_names) <= set(device_vars.keys()) else None
 
     async def async_fetch_url(self, url: str, retries: int = 0, scrub_keys: list[str] = []):
         async def fetch_with_retries(try_n):
