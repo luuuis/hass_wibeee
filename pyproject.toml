@@ -13,8 +13,8 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 homeassistant = "2023.7.3"
-xmltodict = "^0.13.0"
-lxml = "^5.1.0"
+xmltodict = "0.13.0"
+lxml = "5.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
