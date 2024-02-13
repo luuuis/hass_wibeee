@@ -143,16 +143,13 @@ class StatusElement(NamedTuple):
 def get_status_elements() -> list[StatusElement]:
     """Returns the expected elements in the status XML response for this device."""
 
-    def has_poll_var(s: SensorType) -> bool:
-        return s.poll_var_prefix is not None
-
-    def get_phases(s: SensorType) -> list[(str, str)]:
+    def get_xml_names(s: SensorType) -> list[(str, str)]:
         return [('4' if ph == 't' else ph, f"{s.poll_var_prefix}{ph}") for ph in ['1', '2', '3', 't']]
 
     return [
         StatusElement(phase, xml_name, sensor_type)
-        for sensor_type in KNOWN_SENSORS if has_poll_var(sensor_type)
-        for phase, xml_name in get_phases(sensor_type)
+        for sensor_type in KNOWN_SENSORS if sensor_type.poll_var_prefix is not None
+        for phase, xml_name in get_xml_names(sensor_type)
     ]
 
 
