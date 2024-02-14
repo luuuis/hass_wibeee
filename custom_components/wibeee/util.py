@@ -16,6 +16,6 @@ def scrub_values_xml(keys: list[str], xml_text: bytes) -> str:
     for key in keys:
         values = tree.xpath(f"/values/variable[id/text()='{key}']/value")
         for v in values:
-            v.text = '*MASKED*'
+            v.text = '**REDACTED**'
 
     return etree.tostring(tree)
