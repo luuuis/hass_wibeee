@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.5.0-beta.1](https://github.com/luuuis/hass_wibeee/compare/v3.5.0-beta.0...v3.5.0-beta.1) (2024-02-14)
+
+
+### Bug Fixes
+
+* relax lxml requirement to increase for compatibility with older HA ([#84](https://github.com/luuuis/hass_wibeee/issues/84)) ([1cec76d](https://github.com/luuuis/hass_wibeee/commit/1cec76df094f75a3905c1bd04cb37bd5d20cadea))
+
 ## [3.5.0-beta.0](https://github.com/luuuis/hass_wibeee/compare/v3.4.3...v3.5.0-beta.0) (2024-02-13)
 
 
