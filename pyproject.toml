@@ -14,7 +14,7 @@ packages = [
 python = ">=3.11,<3.13"
 homeassistant = "2023.7.3"
 xmltodict = "0.13.0"
-lxml = "5.1.0"
+lxml = ">=4.9.1,<6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
