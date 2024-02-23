@@ -103,8 +103,8 @@ KNOWN_SENSORS = [
     SensorType('pap', 'p', 'Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
     SensorType('fpot', 'f', 'Power_Factor', 'Power Factor', None, SensorDeviceClass.POWER_FACTOR),
     SensorType('eac', 'e', 'Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eaccons', 'e', 'Active_Energy_Consumed', 'Active Energy Consumed', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eacprod', 'e', 'Active_Energy_Produced', 'Active Energy Produced', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eaccons', None, 'Active_Energy_Consumed', 'Active Energy Consumed', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eacprod', None, 'Active_Energy_Produced', 'Active Energy Produced', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereact', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereactc', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
 ]
