@@ -6,11 +6,14 @@ Documentation: https://github.com/luuuis/hass_wibeee/
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM
 
 _LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = [Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -24,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(async_update_options))
 
     # Forward the setup to the sensor platform.
-    hass.async_create_task(hass.config_entries.async_forward_entry_setup(entry, "sensor"))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
