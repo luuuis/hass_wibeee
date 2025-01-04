@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.6.4](https://github.com/luuuis/hass_wibeee/compare/v3.6.3...v3.6.4) (2025-01-04)
+
+
+### Bug Fixes
+
+* remove usage of constants that were removed in 2025.1 ([#97](https://github.com/luuuis/hass_wibeee/issues/97)) ([c05308a](https://github.com/luuuis/hass_wibeee/commit/c05308aca5be927929f51139b422b158f836ee0b))
+
 ### [3.6.3](https://github.com/luuuis/hass_wibeee/compare/v3.6.1...v3.6.3) (2024-06-13)
 
 ### [3.6.2](https://github.com/luuuis/hass_wibeee/compare/v3.6.1...v3.6.2) (2024-06-13)
