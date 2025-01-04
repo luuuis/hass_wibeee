@@ -22,18 +22,18 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import (ConfigEntry, SOURCE_IMPORT)
 from homeassistant.const import (
-    FREQUENCY_HERTZ,
-    POWER_WATT,
-    POWER_VOLT_AMPERE,
-    POWER_VOLT_AMPERE_REACTIVE,
-    ELECTRIC_POTENTIAL_VOLT,
-    ELECTRIC_CURRENT_AMPERE,
-    ENERGY_WATT_HOUR,
     CONF_HOST,
     CONF_SCAN_INTERVAL,
     CONF_TIMEOUT,
     CONF_UNIQUE_ID,
     STATE_UNAVAILABLE,
+    UnitOfFrequency,
+    UnitOfPower,
+    UnitOfApparentPower,
+    UnitOfReactivePower,
+    UnitOfElectricPotential,
+    UnitOfElectricCurrent,
+    UnitOfEnergy,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import PlatformNotReady
@@ -93,18 +93,18 @@ class SensorType(NamedTuple):
 
 
 KNOWN_SENSORS = [
-    SensorType('vrms', 'v', 'Vrms', 'Phase Voltage', ELECTRIC_POTENTIAL_VOLT, SensorDeviceClass.VOLTAGE),
-    SensorType('irms', 'i', 'Irms', 'Current', ELECTRIC_CURRENT_AMPERE, SensorDeviceClass.CURRENT),
-    SensorType('freq', 'q', 'Frequency', 'Frequency', FREQUENCY_HERTZ, device_class=None),
-    SensorType('pac', 'a', 'Active_Power', 'Active Power', POWER_WATT, SensorDeviceClass.POWER),
-    SensorType('preac', 'r', 'Reactive_Power', 'Reactive Power', POWER_VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
-    SensorType(None, 'r', 'Inductive_Reactive_Power', 'Inductive Reactive Power', POWER_VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
-    SensorType(None, None, 'Capacitive_Reactive_Power', 'Capacitive Reactive Power', POWER_VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
-    SensorType('pap', 'p', 'Apparent_Power', 'Apparent Power', POWER_VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
+    SensorType('vrms', 'v', 'Vrms', 'Phase Voltage', UnitOfElectricPotential.VOLT, SensorDeviceClass.VOLTAGE),
+    SensorType('irms', 'i', 'Irms', 'Current', UnitOfElectricCurrent.AMPERE, SensorDeviceClass.CURRENT),
+    SensorType('freq', 'q', 'Frequency', 'Frequency', UnitOfFrequency.HERTZ, device_class=None),
+    SensorType('pac', 'a', 'Active_Power', 'Active Power', UnitOfPower.WATT, SensorDeviceClass.POWER),
+    SensorType('preac', 'r', 'Reactive_Power', 'Reactive Power', UnitOfReactivePower.VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
+    SensorType(None, 'r', 'Inductive_Reactive_Power', 'Inductive Reactive Power', UnitOfReactivePower.VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
+    SensorType(None, None, 'Capacitive_Reactive_Power', 'Capacitive Reactive Power', UnitOfReactivePower.VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
+    SensorType('pap', 'p', 'Apparent_Power', 'Apparent Power', UnitOfApparentPower.VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
     SensorType('fpot', 'f', 'Power_Factor', 'Power Factor', None, SensorDeviceClass.POWER_FACTOR),
-    SensorType('eac', 'e', 'Active_Energy', 'Active Energy', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eaccons', None, 'Active_Energy_Consumed', 'Active Energy Consumed', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eacprod', None, 'Active_Energy_Produced', 'Active Energy Produced', ENERGY_WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eac', 'e', 'Active_Energy', 'Active Energy', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eaccons', None, 'Active_Energy_Consumed', 'Active Energy Consumed', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eacprod', None, 'Active_Energy_Produced', 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereact', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereactc', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
 ]
