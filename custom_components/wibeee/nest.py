@@ -88,6 +88,7 @@ async def get_nest_proxy(
                 if res.status < 200 or res.status > 299:
                     LOGGER.warning('Wibeee Cloud returned %d for forwarded request: %s', res.status, res_body)
 
+                LOGGER.debug('%s returned %d for forwarded request: %s', device_info.upstream, res.status, res_body)
                 return web.Response(status=res.status, headers=res.headers, body=res_body)
 
             except aiohttp.ClientError as e:
