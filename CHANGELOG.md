@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.6.5](https://github.com/luuuis/hass_wibeee/compare/v3.6.4...v3.6.5) (2025-02-19)
+
+
+### Bug Fixes
+
+* log Wibeee Cloud response at DEBUG ([#100](https://github.com/luuuis/hass_wibeee/issues/100)) ([698d964](https://github.com/luuuis/hass_wibeee/commit/698d96490efa1a6d8167312c0e010f89c0a36424))
+
 ### [3.6.4](https://github.com/luuuis/hass_wibeee/compare/v3.6.3...v3.6.4) (2025-01-04)
 
 
