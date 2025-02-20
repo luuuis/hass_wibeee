@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.6.6](https://github.com/luuuis/hass_wibeee/compare/v3.6.5...v3.6.6) (2025-02-20)
+
+
+### Bug Fixes
+
+* update CI to use Python 3.12 ([#101](https://github.com/luuuis/hass_wibeee/issues/101)) ([0d69f2f](https://github.com/luuuis/hass_wibeee/commit/0d69f2f337aee6e4407eb4acafd7d9644fe461e6))
+
 ### [3.6.5](https://github.com/luuuis/hass_wibeee/compare/v3.6.4...v3.6.5) (2025-02-19)
 
 
