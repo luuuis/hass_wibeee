@@ -11,7 +11,7 @@ from homeassistant.components.network.const import PUBLIC_TARGET_IP
 from homeassistant.core import callback
 from homeassistant.helpers import singleton
 from homeassistant.helpers.typing import EventType
-from wibeee.const import NEST_NULL_UPSTREAM
+from .const import NEST_NULL_UPSTREAM
 
 LOGGER = logging.getLogger(__name__)
 
