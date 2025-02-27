@@ -8,8 +8,7 @@ from homeassistant.components.network.const import PUBLIC_TARGET_IP
 from homeassistant.core import callback
 from homeassistant.helpers import singleton
 from homeassistant.helpers.typing import EventType
-
-from .const import NEST_NULL_UPSTREAM
+from wibeee.const import NEST_NULL_UPSTREAM
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,33 +39,24 @@ class NestProxy(object):
     def unregister_device(self, mac_address: str):
         self._listeners.pop(mac_address)
 
-    def get_device_info(self, mac_addr: str) -> DeviceConfig:
+    def get_device_info(self, mac_addr: str) -> DeviceConfig | None:
         return self._listeners.get(mac_addr, None)
 
 
-@singleton.singleton("wibeee_nest_proxy")
-async def get_nest_proxy(
-        hass: HomeAssistant,
-        local_port=8600,
-) -> NestProxy:
-    nest_proxy = NestProxy()
-
+def create_application(get_device_info: Callable[[str], Optional[DeviceConfig]]) -> aiohttp.web.Application:
     # disable persistent HTTP connections as the Wibeee Cloud will otherwise
     # time out our connections, causing a ServerDisconnectedError below.
     connector = aiohttp.TCPConnector(force_close=True)
     session = aiohttp.ClientSession(connector=connector)
 
-    @callback
-    def close_session(ev: EventType) -> None:
+    async def close_session(app: web.Application) -> None:
         session.detach()
-        connector.close()
+        await connector.close()
 
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, close_session)
-
-    def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict]]]) -> _HandlerType:
+    def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict, str]]]) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:
             mac_addr, push_data, forward_body = await decode_data(req)
-            device_info = nest_proxy.get_device_info(mac_addr)
+            device_info = get_device_info(mac_addr)
 
             if device_info is None:
                 LOGGER.debug("Ignoring unexpected push data from %s received as %s %s: %s", mac_addr, req.method, req.path, push_data)
@@ -98,6 +88,7 @@ async def get_nest_proxy(
         return handler
 
     app = aiohttp.web.Application()
+    app.on_shutdown.append(close_session)
     app.add_routes([
         web.get('/Wibeee/receiver', nest_forward(extract_query_params)),
         web.get('/Wibeee/receiverAvg', nest_forward(extract_query_params)),
@@ -107,13 +98,20 @@ async def get_nest_proxy(
         web.route('*', '/{anypath:.*}', unknown_path_handler),
     ])
 
-    # don't listen on public IP
-    local_ip = await async_get_source_ip(hass, target_ip=PUBLIC_TARGET_IP)
+    return app
 
+
+@singleton.singleton("wibeee_nest_proxy")
+async def get_nest_proxy(hass: HomeAssistant, local_port=8600) -> NestProxy:
     # access log only if DEBUG level is enabled
     access_log = logging.getLogger(f'{__name__}.access')
     access_log.setLevel(access_log.getEffectiveLevel() + 10)
 
+    # don't listen on public IP
+    local_ip = await async_get_source_ip(hass, target_ip=PUBLIC_TARGET_IP)
+
+    nest_proxy = NestProxy()
+    app = create_application(lambda mac_addr: nest_proxy.get_device_info(mac_addr))
     server = hass.loop.create_task(web._run_app(app, host=local_ip, port=local_port, access_log=access_log))
     LOGGER.info('Wibeee Nest proxy listening on http://%s:%d', local_ip, local_port)
 
@@ -126,13 +124,13 @@ async def get_nest_proxy(
     return nest_proxy
 
 
-async def extract_query_params(req: web.Request) -> Tuple[str, Dict, Optional[str]]:
+async def extract_query_params(req: web.Request) -> Tuple[Optional[str], Dict, Optional[str]]:
     """Extracts Wibeee data from query params."""
     query = {k: v for k, v in parse_qsl(req.query_string)}
     return query['mac'], query, await req.text() if req.can_read_body else None
 
 
-async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict, str]:
+async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict, Optional[str]]:
     """Extracts Wibeee data from JSON request body."""
     body = await req.text() if req.can_read_body else None
     LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
