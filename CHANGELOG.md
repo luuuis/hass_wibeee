@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.6.8](https://github.com/luuuis/hass_wibeee/compare/v3.6.7...v3.6.8) (2025-02-27)
+
+
+### Bug Fixes
+
+* broken import of NEST_NULL_UPSTREAM ([#103](https://github.com/luuuis/hass_wibeee/issues/103)) ([713f1a2](https://github.com/luuuis/hass_wibeee/commit/713f1a2cf3d269addfef8dcbb61d68ba0f779bcc))
+
 ### [3.6.7](https://github.com/luuuis/hass_wibeee/compare/v3.6.6...v3.6.7) (2025-02-27)
 
 
