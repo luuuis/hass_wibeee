@@ -20,6 +20,7 @@ lxml = ">=4.9.1,<6"
 pytest = "^8.0.0"
 aioresponses = "^0.7.6"
 pytest-asyncio = "^0.23.5"
+pytest-aiohttp = "1.0.5"
 
 [build-system]
 requires = ["poetry-core"]
