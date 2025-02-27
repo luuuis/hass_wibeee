@@ -1,8 +1,11 @@
 import json
 import logging
-from typing import Callable, Dict, Tuple, NamedTuple, Awaitable, Optional
+import time
+from typing import Callable, Dict, NamedTuple, Awaitable, Optional
 from urllib.parse import parse_qsl
 
+from aiohttp.web_request import Request
+from aiohttp.web_response import StreamResponse
 from homeassistant.components.network import async_get_source_ip
 from homeassistant.components.network.const import PUBLIC_TARGET_IP
 from homeassistant.core import callback
@@ -27,6 +30,12 @@ class DeviceConfig(NamedTuple):
     """The upstream server to forward data to"""
 
 
+class DecodedRequest(NamedTuple):
+    macAddr: str | None = None
+    push_data: Dict = {}
+    body: str | None = None
+
+
 class NestProxy(object):
     _listeners: Dict[str, DeviceConfig] = {}
 
@@ -43,6 +52,13 @@ class NestProxy(object):
         return self._listeners.get(mac_addr, None)
 
 
+def respond(response: str | Callable[[web.Request], str]) -> Callable[[Request], Awaitable[StreamResponse]]:
+    async def respond_(req: web.Request) -> web.StreamResponse:
+        return web.Response(status=200, body=response(req) if callable(response) else response)
+
+    return respond_
+
+
 def create_application(get_device_info: Callable[[str], Optional[DeviceConfig]]) -> aiohttp.web.Application:
     # disable persistent HTTP connections as the Wibeee Cloud will otherwise
     # time out our connections, causing a ServerDisconnectedError below.
@@ -53,7 +69,8 @@ def create_application(get_device_info: Callable[[str], Optional[DeviceConfig]])
         session.detach()
         await connector.close()
 
-    def nest_forward(decode_data: Callable[[web.Request], Awaitable[Tuple[str, Dict, str]]]) -> _HandlerType:
+    def nest_forward(decode_data: Callable[[web.Request], Awaitable[DecodedRequest]],
+                     make_response: Callable[[web.Request], Awaitable[web.StreamResponse]]) -> _HandlerType:
         async def handler(req: web.Request) -> web.StreamResponse:
             mac_addr, push_data, forward_body = await decode_data(req)
             device_info = get_device_info(mac_addr)
@@ -68,7 +85,7 @@ def create_application(get_device_info: Callable[[str], Optional[DeviceConfig]])
             if device_info.upstream == NEST_NULL_UPSTREAM:
                 # don't send to any upstream.
                 LOGGER.debug("Accepted local-only push data from %s in %s %s: %s", mac_addr, req.method, req.path, push_data)
-                return web.Response(status=202)  # Accepted
+                return await make_response(req)
 
             url = f'{device_info.upstream}{req.path_qs}'
             try:
@@ -90,11 +107,11 @@ def create_application(get_device_info: Callable[[str], Optional[DeviceConfig]])
     app = aiohttp.web.Application()
     app.on_shutdown.append(close_session)
     app.add_routes([
-        web.get('/Wibeee/receiver', nest_forward(extract_query_params)),
-        web.get('/Wibeee/receiverAvg', nest_forward(extract_query_params)),
-        web.get('/Wibeee/receiverLeap', nest_forward(extract_query_params)),
-        web.post('/Wibeee/receiverAvgPost', nest_forward(extract_json_body)),
-        web.post('/Wibeee/receiverJSON', nest_forward(extract_json_body)),
+        web.get('/Wibeee/receiver', nest_forward(extract_query_params, respond(''))),
+        web.get('/Wibeee/receiverAvg', nest_forward(extract_query_params, respond('<<<WBAVG '))),
+        web.get('/Wibeee/receiverLeap', nest_forward(extract_query_params, respond('<<<WGRADIENT=007 '))),
+        web.post('/Wibeee/receiverAvgPost', nest_forward(extract_json_body, respond('<<<WBAVG '))),
+        web.post('/Wibeee/receiverJSON', nest_forward(extract_json_body, respond(lambda req: f'<<<WBJSON {int(time.time())}'))),
         web.route('*', '/{anypath:.*}', unknown_path_handler),
     ])
 
@@ -124,13 +141,13 @@ async def get_nest_proxy(hass: HomeAssistant, local_port=8600) -> NestProxy:
     return nest_proxy
 
 
-async def extract_query_params(req: web.Request) -> Tuple[Optional[str], Dict, Optional[str]]:
+async def extract_query_params(req: web.Request) -> DecodedRequest:
     """Extracts Wibeee data from query params."""
     query = {k: v for k, v in parse_qsl(req.query_string)}
-    return query['mac'], query, await req.text() if req.can_read_body else None
+    return DecodedRequest(query['mac'], query, await req.text() if req.can_read_body else None)
 
 
-async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict, Optional[str]]:
+async def extract_json_body(req: web.Request) -> DecodedRequest:
     """Extracts Wibeee data from JSON request body."""
     body = await req.text() if req.can_read_body else None
     LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
@@ -153,9 +170,9 @@ async def extract_json_body(req: web.Request) -> Tuple[Optional[str], Dict, Opti
 
     if parse_error:
         LOGGER.debug("Error parsing JSON in %s %s: %s", req.method, req.path, body, exc_info=parse_error)
-        return None, {}, body
+        return DecodedRequest(None, {}, body)
 
-    return parsed_body.get('mac', None), parsed_body, json.dumps(parsed_body)
+    return DecodedRequest(parsed_body.get('mac', None), parsed_body, json.dumps(parsed_body))
 
 
 async def unknown_path_handler(req: web.Request) -> web.StreamResponse:

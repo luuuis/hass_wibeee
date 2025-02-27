@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -24,17 +25,32 @@ PUSH_DATA = {'mac': '001122334455', 'ip': '127.0.0.1', 'soft': '3.3.614', 'model
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("method, path, param", [
-    ("get", "receiver", "params"),
-    ("get", "receiverAvg", "params"),
-    ("get", "receiverLeap", "params"),
-    ("post", "receiverAvgPost", "json"),
-    ("post", "receiverJSON", "json"),
+@pytest.mark.parametrize("method, path, param, response", [
+    ("get", "receiver", "params", ""),
+    ("get", "receiverAvg", "params", "<<<WBAVG "),
+    ("get", "receiverLeap", "params", "<<<WGRADIENT=007 "),
+    ("post", "receiverAvgPost", "json", "<<<WBAVG "),
 ])
-async def test_null_upstream(nest_fixture, method, path, param):
+async def test_null_upstream(nest_fixture, method, path, param, response):
     handle_push_data, client = nest_fixture
 
     res = await getattr(client, method)(f'/Wibeee/{path}', **({param: PUSH_DATA}))
-    assert res.status == 202
+    assert res.status == 200
+    assert await res.text() == response
 
+    handle_push_data.assert_called_with(PUSH_DATA)
+
+
+@pytest.mark.asyncio
+async def test_null_upstream_json(nest_fixture):
+    handle_push_data, client = nest_fixture
+
+    res = await client.post(f'/Wibeee/receiverJSON', json=PUSH_DATA)
+    assert res.status == 200
+
+    response: str = await res.text()
+    start = "<<<WBJSON "
+    assert response.startswith(start)
+    response_timestamp = response[len(start):]
+    assert float(response_timestamp) == pytest.approx(time.time(), abs=5)
     handle_push_data.assert_called_with(PUSH_DATA)
