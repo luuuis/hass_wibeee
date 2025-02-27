@@ -70,7 +70,7 @@ Home Assistant.
 
 Optionally, configure extra template sensors for grid consumption and feed-in to use
 with [Home Energy Management](https://www.home-assistant.io/home-energy-management/).
-See [SENSOR_EXAMPLES.md](./SENSOR_EXAMPLES.md)
+See [Sensor Examples](https://github.com/luuuis/hass_wibeee/wiki/Sensor-Examples)
 for suggested sensors that will help you get the most out of the integration.
 
 ### 💡 Configuring Local Push (optional, advanced)
