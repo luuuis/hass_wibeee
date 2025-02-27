@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.6.7](https://github.com/luuuis/hass_wibeee/compare/v3.6.6...v3.6.7) (2025-02-27)
+
+
+### Bug Fixes
+
+* emulate Nest Cloud responses in Local-only mode ([#102](https://github.com/luuuis/hass_wibeee/issues/102)) ([15b1317](https://github.com/luuuis/hass_wibeee/commit/15b13172d083e1bf2e7cbda33171e9b9ebf5682d))
+
 ### [3.6.6](https://github.com/luuuis/hass_wibeee/compare/v3.6.5...v3.6.6) (2025-02-20)
 
 
