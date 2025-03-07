@@ -3,12 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
+
 from wibeee.const import NEST_NULL_UPSTREAM
 from wibeee.nest import create_application, DeviceConfig
 
 
 @pytest_asyncio.fixture
-async def nest_fixture(aiohttp_client):
+async def nest_fixture(aiohttp_client, socket_enabled):
     handle_push_data = MagicMock()
     device_config = DeviceConfig(handle_push_data, NEST_NULL_UPSTREAM)
     app = create_application(lambda _: device_config)
