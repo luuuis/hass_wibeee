@@ -23,6 +23,9 @@ pytest-asyncio = "^0.24.0"
 pytest-aiohttp = "1.0.5"
 pytest-homeassistant-custom-component = "0.13.176"
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
