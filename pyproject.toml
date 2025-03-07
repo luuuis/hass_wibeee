@@ -12,15 +12,20 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-homeassistant = "2024.2.5"
+homeassistant = "^2024.10.0"
 xmltodict = "0.13.0"
 lxml = ">=4.9.1,<6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 aioresponses = "^0.7.6"
-pytest-asyncio = "^0.23.5"
+pytest-asyncio = "^0.24.0"
 pytest-aiohttp = "1.0.5"
+pytest-homeassistant-custom-component = "0.13.176"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["poetry-core"]
