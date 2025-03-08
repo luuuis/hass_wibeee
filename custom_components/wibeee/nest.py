@@ -8,9 +8,8 @@ from aiohttp.web_request import Request
 from aiohttp.web_response import StreamResponse
 from homeassistant.components.network import async_get_source_ip
 from homeassistant.components.network.const import PUBLIC_TARGET_IP
-from homeassistant.core import callback
+from homeassistant.core import callback, Event
 from homeassistant.helpers import singleton
-from homeassistant.helpers.typing import EventType
 from .const import NEST_NULL_UPSTREAM
 
 LOGGER = logging.getLogger(__name__)
@@ -133,7 +132,7 @@ async def get_nest_proxy(hass: HomeAssistant, local_port=8600) -> NestProxy:
     LOGGER.info('Wibeee Nest proxy listening on http://%s:%d', local_ip, local_port)
 
     @callback
-    def shutdown_proxy(ev: EventType) -> None:
+    def shutdown_proxy(ev: Event) -> None:
         LOGGER.info('Wibeee Nest proxy shutting down')
         server.cancel()
 
