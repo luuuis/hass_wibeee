@@ -215,7 +215,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
     device = await api.async_fetch_device_info(retries=5)
-    status_elements = get_status_elements()
+    status_elements = reversed(sorted(get_status_elements(), key=lambda e: e.phase))
 
     initial_status = await api.async_fetch_values(device.id, retries=10)
     sensors = [
