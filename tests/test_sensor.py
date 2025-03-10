@@ -6,9 +6,8 @@ from homeassistant.helpers import device_registry
 from homeassistant.helpers.entity_platform import EntityPlatform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.wibeee import DOMAIN
 from custom_components.wibeee.api import WibeeeAPI
-from custom_components.wibeee.sensor import DeviceInfo
+from custom_components.wibeee.sensor import DeviceInfo, WibeeeSensor
 
 
 def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, any]:
@@ -22,7 +21,8 @@ def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
-async def test_device_registry(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
+@patch.object(EntityPlatform, 'async_add_entities', wraps=EntityPlatform.async_add_entities, autospec=True)
+async def test_device_registry(spy_async_add_entities, mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
     devices_data = [
         [
             DeviceInfo('Wibeee 1Ph', '00:11:00:11:00:11', '10.9.8', 'WBM', '1.2.3.4'),
@@ -33,7 +33,7 @@ async def test_device_registry(mock_async_fetch_device_info, mock_async_fetch_va
         ],
     ]
 
-    entries = [MockConfigEntry(domain=DOMAIN, data={'host': info.ipAddr}, version=2) for info, sensors in devices_data]
+    entries = [MockConfigEntry(domain='wibeee', data={'host': info.ipAddr}, version=2) for info, sensors in devices_data]
     device_infos = {info.ipAddr: info for info, sensors in devices_data}
     device_values = {i.ipAddr: _build_values(i, sensors) for i, sensors in devices_data}
 
@@ -54,4 +54,12 @@ async def test_device_registry(mock_async_fetch_device_info, mock_async_fetch_va
         'Wibeee 001100': None,
         'Wibeee 001100 Line 1': device_ids['Wibeee 001100'],
         'Wibeee 110011 Line 1': None,
+    }
+
+    # ensure via_device is correct, HA will start to fail if not.
+    added_sensors: list[WibeeeSensor] = [e for call_args in spy_async_add_entities.call_args_list for e in call_args.args[1]]
+    assert {s.name: s._attr_device_info['via_device'] for s in added_sensors} == {
+        'Wibeee 3Ph Phase Voltage L4': None,
+        'Wibeee 3Ph Phase Voltage L1': ('wibeee', '11:00:11:00:11:00'),
+        'Wibeee 1Ph Phase Voltage L1': None,
     }

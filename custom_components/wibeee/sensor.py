@@ -123,6 +123,9 @@ KNOWN_MODELS = {
     'WBP': 'Wibeee PLUG',
 }
 
+_PH4 = '4'
+"""A pseudo-phase that holds the overall metric in 3-phase devices."""
+
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Import existing configuration from YAML."""
@@ -146,7 +149,7 @@ def get_status_elements() -> list[StatusElement]:
     """Returns the expected elements in the status XML response for this device."""
 
     def get_xml_names(s: SensorType) -> list[(str, str)]:
-        return [('4' if ph == 't' else ph, f"{s.poll_var_prefix}{ph}") for ph in ['1', '2', '3', 't']]
+        return [(_PH4 if ph == 't' else ph, f"{s.poll_var_prefix}{ph}") for ph in ['1', '2', '3', 't']]
 
     return [
         StatusElement(phase, xml_name, sensor_type)
@@ -215,12 +218,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
     device = await api.async_fetch_device_info(retries=5)
-    status_elements = reversed(sorted(get_status_elements(), key=lambda e: e.phase))
+    fetched_values = await api.async_fetch_values(device.id, retries=10)
+    status_elements = [e for e in get_status_elements() if e.xml_name in fetched_values]
 
-    initial_status = await api.async_fetch_values(device.id, retries=10)
+    phases = [e.phase for e in status_elements]
+    via_device = device if _PH4 in phases else None
+    devices = {phase: _make_device_info(device, phase, via_device=via_device if phase != _PH4 else None) for phase in phases}
+
     sensors = [
-        WibeeeSensor(device, e.phase, e.sensor_type, e.xml_name, initial_status.get(e.xml_name))
-        for e in status_elements if e.xml_name in initial_status
+        WibeeeSensor(device, devices[e.phase], e.phase, e.sensor_type, e.xml_name, fetched_values.get(e.xml_name))
+        for e in reversed(sorted(status_elements, key=lambda e: e.phase))  # ensure "total" sensors are added first
     ]
 
     for sensor in sensors:
@@ -243,7 +250,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, device: DeviceInfo, sensor_phase: str, sensor_type: SensorType, status_xml_param: str, initial_value: StateType):
+    def __init__(self, device: DeviceInfo, device_info: HassDeviceInfo, sensor_phase: str, sensor_type: SensorType, status_xml_param: str,
+                 initial_value: StateType):
         """Initialize the sensor."""
         [device_name, mac_addr] = [device.id, device.macAddr]
         entity_id = slugify(f"{DOMAIN} {mac_addr} {sensor_type.friendly_name} L{sensor_phase}")
@@ -255,10 +263,10 @@ class WibeeeSensor(SensorEntity):
         self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
         self._attr_name = f"{device_name} {sensor_type.friendly_name} L{sensor_phase}"
         self._attr_should_poll = False
-        self._attr_device_info = _make_device_info(device, sensor_phase)
+        self._attr_device_info = device_info
         self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name
         self.status_xml_param = status_xml_param
-        self.nest_push_param = f"{sensor_type.push_var_prefix}{'t' if sensor_phase == '4' else sensor_phase}"
+        self.nest_push_param = f"{sensor_type.push_var_prefix}{'t' if sensor_phase == _PH4 else sensor_phase}"
 
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:
@@ -270,9 +278,9 @@ class WibeeeSensor(SensorEntity):
             _LOGGER.debug("Updating from %s: %s", update_source, self)
 
 
-def _make_device_info(device: DeviceInfo, sensor_phase) -> HassDeviceInfo:
+def _make_device_info(device: DeviceInfo, sensor_phase: str, via_device: DeviceInfo | None) -> HassDeviceInfo:
     mac_addr = device.macAddr
-    is_clamp = sensor_phase != '4'
+    is_clamp = sensor_phase != _PH4
 
     device_name = f'Wibeee {short_mac(mac_addr)}'
     device_model = KNOWN_MODELS.get(device.model, 'Wibeee Energy Meter')
@@ -280,7 +288,7 @@ def _make_device_info(device: DeviceInfo, sensor_phase) -> HassDeviceInfo:
     return HassDeviceInfo(
         # identifiers and links
         identifiers={(DOMAIN, f'{mac_addr}_L{sensor_phase}' if is_clamp else mac_addr)},
-        via_device=(DOMAIN, f'{mac_addr}') if is_clamp else None,
+        via_device=(DOMAIN, f'{via_device.macAddr}') if via_device else None,
 
         # and now for the humans :)
         name=device_name if not is_clamp else f"{device_name} Line {sensor_phase}",
