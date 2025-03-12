@@ -26,10 +26,10 @@ async def test_device_registry(spy_async_add_entities, mock_async_fetch_device_i
     devices_data = [
         [
             DeviceInfo('Wibeee 1Ph', '00:11:00:11:00:11', '10.9.8', 'WBM', '1.2.3.4'),
-            {'vrms1': '230'}],
-        [
+            {'vrms1': '230'},
+        ], [
             DeviceInfo('Wibeee 3Ph', '11:00:11:00:11:00', '7.6.5', 'WBT', '4.3.2.1'),
-            {'vrms1': '200', 'vrmst': '1000'}
+            {'vrms1': '200', 'vrmst': '1000'},
         ],
     ]
 

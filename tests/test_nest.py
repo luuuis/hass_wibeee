@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 import pytest
 import pytest_asyncio
 
-from wibeee.const import NEST_NULL_UPSTREAM
-from wibeee.nest import create_application, DeviceConfig
+from custom_components.wibeee.const import NEST_NULL_UPSTREAM
+from custom_components.wibeee.nest import create_application, DeviceConfig
 
 
 @pytest_asyncio.fixture

@@ -5,7 +5,7 @@ import aiohttp
 from aioresponses import aioresponses
 from pytest_homeassistant_custom_component.common import load_fixture
 
-from wibeee import api
+from custom_components.wibeee import api
 
 DEVICE_INFO = api.DeviceInfo(id='X', macAddr='111111111111', softVersion='4.4.124', model='WB3', ipAddr='10.10.10.100')
 TIMEOUT = timedelta(seconds=5)
