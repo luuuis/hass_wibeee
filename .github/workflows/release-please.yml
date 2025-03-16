@@ -28,4 +28,4 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-        run: gh release upload ${{ steps.release.outputs.tag_name }} ./artifact/hass_wibeee.zip
+        run: gh release upload ${{ steps.release.outputs.tag_name }} ./hass_wibeee.zip
