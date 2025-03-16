@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.6.9-rc.1](https://github.com/luuuis/hass_wibeee/compare/v3.6.9-rc...v3.6.9-rc.1) (2025-03-16)
+
+
+### Bug Fixes
+
+* artifact path ([730e07e](https://github.com/luuuis/hass_wibeee/commit/730e07e7d81bed7526a7deb7b10c989487676afd))
+
 ## [3.6.9-rc](https://github.com/luuuis/hass_wibeee/compare/v3.6.8...v3.6.9-rc) (2025-03-16)
 
 
