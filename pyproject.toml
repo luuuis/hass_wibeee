@@ -7,7 +7,7 @@ license = "GNU General Public License v3.0"
 readme = "README.md"
 
 packages = [
-    { include = "wibeee", from = "custom_components" },
+    { include = "custom_components", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -24,6 +24,7 @@ pytest-homeassistant-custom-component = "0.13.205"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+pythonpath = "src"
 
 [build-system]
 requires = ["poetry-core"]
