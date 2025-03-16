@@ -105,8 +105,8 @@ KNOWN_SENSORS = [
     SensorType('eac', 'e', 'Active_Energy', 'Active Energy', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('eaccons', None, 'Active_Energy_Consumed', 'Active Energy Consumed', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('eacprod', None, 'Active_Energy_Produced', 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('ereact', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('ereactc', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('ereact', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
+    SensorType('ereactc', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
 ]
 
 KNOWN_MODELS = {
