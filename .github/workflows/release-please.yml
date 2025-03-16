@@ -2,7 +2,6 @@ on:
   push:
     branches:
       - main
-      - tweak-release-please
 
 permissions:
   contents: write
