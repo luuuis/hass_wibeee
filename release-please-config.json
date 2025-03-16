@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "python",
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "path": "custom_components/wibeee/manifest.json",
+          "type": "json"
+        }
+      ]
+    }
+  }
+}
