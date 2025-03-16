@@ -19,6 +19,7 @@ jobs:
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           target-branch: ${{ github.ref_name }}
+      - uses: actions/checkout@v4
       - name: Create Release ZIP
         if: ${{ steps.release.outputs.release_created }}
         env:
