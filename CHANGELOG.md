@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.6.9-rc.3](https://github.com/luuuis/hass_wibeee/compare/v3.6.9-rc.2...v3.6.9-rc.3) (2025-03-16)
+
+
+### Bug Fixes
+
+* **releases:** use sha for creating ZIP, don't checkout unless release was created ([1fdbd1b](https://github.com/luuuis/hass_wibeee/commit/1fdbd1bea727a1f51dd2a66746d66f7c51f53085))
+
 ## [3.6.9-rc.2](https://github.com/luuuis/hass_wibeee/compare/v3.6.9-rc.1...v3.6.9-rc.2) (2025-03-16)
 
 
