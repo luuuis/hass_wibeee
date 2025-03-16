@@ -63,3 +63,15 @@ async def test_device_registry(spy_async_add_entities, mock_async_fetch_device_i
         'Wibeee 3Ph Phase Voltage L1': ('wibeee', '11:00:11:00:11:00'),
         'Wibeee 1Ph Phase Voltage L1': None,
     }
+
+
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+async def test_migrate_entry(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
+    entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.1'}, version=1)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert configured_entry.version == 2

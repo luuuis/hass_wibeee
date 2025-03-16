@@ -76,8 +76,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
         new_options = {k: v for k, v in options.items() if k != v1_conf_nest_proxy_enable} | {CONF_NEST_UPSTREAM: nest_upstream}
 
-        config_entry.version = 2
-        hass.config_entries.async_update_entry(config_entry, options=new_options)
+        hass.config_entries.async_update_entry(config_entry, version=2, options=new_options)
         _LOGGER.info("Migration to version %s successful", config_entry.version)
 
     return True
