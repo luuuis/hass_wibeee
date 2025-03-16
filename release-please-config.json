@@ -3,11 +3,9 @@
   "release-type": "python",
   "packages": {
     ".": {
+      "release-as": "prerelease",
       "extra-files": [
-        {
-          "path": "custom_components/wibeee/manifest.json",
-          "type": "json"
-        }
+        "custom_components/wibeee/manifest.json"
       ]
     }
   }
