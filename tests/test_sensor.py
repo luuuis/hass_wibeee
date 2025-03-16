@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 from unittest.mock import patch
 
@@ -75,3 +76,24 @@ async def test_migrate_entry(mock_async_fetch_device_info, mock_async_fetch_valu
 
     configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
     assert configured_entry.version == 2
+
+
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant, caplog):
+    from custom_components.wibeee.sensor import KNOWN_SENSORS
+
+    caplog.set_level(logging.WARNING)
+
+    info = DeviceInfo('Wibeee 1Ph', '00:11:00:11:00:11', '10.9.8', 'WBM', '1.2.3.4')
+    mock_async_fetch_device_info.return_value = info
+    values = _build_values(info, {f'{s.poll_var_prefix}1': '123' for s in KNOWN_SENSORS})
+    mock_async_fetch_values.return_value = values
+
+    entry = MockConfigEntry(domain='wibeee', data={'host': '1.2.3.4'})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    warnings = [msg for logger, _, msg in caplog.record_tuples if logger == 'homeassistant.components.sensor' and 'wibeee' in msg]
+    assert len(warnings) is 0
