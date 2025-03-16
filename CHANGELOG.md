@@ -2,35 +2,6 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [3.6.9-rc.3](https://github.com/luuuis/hass_wibeee/compare/v3.6.9-rc.2...v3.6.9-rc.3) (2025-03-16)
-
-
-### Bug Fixes
-
-* **releases:** use sha for creating ZIP, don't checkout unless release was created ([1fdbd1b](https://github.com/luuuis/hass_wibeee/commit/1fdbd1bea727a1f51dd2a66746d66f7c51f53085))
-
-## [3.6.9-rc.2](https://github.com/luuuis/hass_wibeee/compare/v3.6.9-rc.1...v3.6.9-rc.2) (2025-03-16)
-
-
-### Bug Fixes
-
-* **releases:** checkout the repo before creating artifact ([69d929c](https://github.com/luuuis/hass_wibeee/commit/69d929c9cbd096b11f87452f3b2f7a5919ddf9dd))
-
-## [3.6.9-rc.1](https://github.com/luuuis/hass_wibeee/compare/v3.6.9-rc...v3.6.9-rc.1) (2025-03-16)
-
-
-### Bug Fixes
-
-* artifact path ([730e07e](https://github.com/luuuis/hass_wibeee/commit/730e07e7d81bed7526a7deb7b10c989487676afd))
-
-## [3.6.9-rc](https://github.com/luuuis/hass_wibeee/compare/v3.6.8...v3.6.9-rc) (2025-03-16)
-
-
-### Bug Fixes
-
-* async_migrate_entry error when setting version ([#112](https://github.com/luuuis/hass_wibeee/issues/112)) ([0bbb773](https://github.com/luuuis/hass_wibeee/commit/0bbb773e0c544d7220d2a5683a862d29f48aa760))
-* don't set via_device attribute in device registry for 1-phase devices ([#110](https://github.com/luuuis/hass_wibeee/issues/110)) ([ce92564](https://github.com/luuuis/hass_wibeee/commit/ce9256408bda64fe69b55181cb92c6f34b0e050f))
-* migrate from deprecated homeassistant.helpers.typing.EventType to homeassistant.core.Event ([#108](https://github.com/luuuis/hass_wibeee/issues/108)) ([566ce1d](https://github.com/luuuis/hass_wibeee/commit/566ce1d3a5c3c1c9ed37485c20a3eb1c14e9b4b8))
 
 ### [3.6.8](https://github.com/luuuis/hass_wibeee/compare/v3.6.7...v3.6.8) (2025-02-27)
 
