@@ -20,11 +20,12 @@ jobs:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           target-branch: ${{ github.ref_name }}
       - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
       - name: Create Release ZIP
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-        run: git archive --format=zip --output=hass_wibeee.zip ${{ steps.release.outputs.tag_name }}:custom_components/wibeee
+        run: git archive --format=zip --output=hass_wibeee.zip ${{ steps.release.outputs.sha }}:custom_components/wibeee
       - name: Upload Release ZIP
         if: ${{ steps.release.outputs.release_created }}
         env:
