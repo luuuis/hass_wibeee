@@ -3,12 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
-from wibeee.const import NEST_NULL_UPSTREAM
-from wibeee.nest import create_application, DeviceConfig
+
+from custom_components.wibeee.const import NEST_NULL_UPSTREAM
+from custom_components.wibeee.nest import create_application, DeviceConfig
 
 
 @pytest_asyncio.fixture
-async def nest_fixture(aiohttp_client):
+async def nest_fixture(aiohttp_client, socket_enabled):
     handle_push_data = MagicMock()
     device_config = DeviceConfig(handle_push_data, NEST_NULL_UPSTREAM)
     app = create_application(lambda _: device_config)
@@ -24,7 +25,6 @@ PUSH_DATA = {'mac': '001122334455', 'ip': '127.0.0.1', 'soft': '3.3.614', 'model
              'e1': '6439820', 'e2': '0', 'e3': '0', 'et': '0', 'o1': '0', 'o2': '0', 'o3': '0', 'ot': '0'}
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("method, path, param, response", [
     ("get", "receiver", "params", ""),
     ("get", "receiverAvg", "params", "<<<WBAVG "),
@@ -41,7 +41,6 @@ async def test_null_upstream(nest_fixture, method, path, param, response):
     handle_push_data.assert_called_with(PUSH_DATA)
 
 
-@pytest.mark.asyncio
 async def test_null_upstream_json(nest_fixture):
     handle_push_data, client = nest_fixture
 
