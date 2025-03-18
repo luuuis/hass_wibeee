@@ -35,7 +35,7 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfEnergy,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback, CALLBACK_TYPE
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo as HassDeviceInfo
@@ -168,7 +168,10 @@ def update_sensors(sensors, update_source, lookup_key, data):
         s.update_value(value, update_source)
 
 
-def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo, sensors: list['WibeeeSensor'], scan_interval: timedelta):
+def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo, sensors: list['WibeeeSensor'], scan_interval: timedelta) -> CALLBACK_TYPE:
+    if scan_interval.total_seconds() == 0:
+        return lambda: None
+
     def poll_xml_param(sensor: WibeeeSensor) -> str:
         return sensor.status_xml_param
 
