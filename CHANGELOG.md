@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.6.10](https://github.com/luuuis/hass_wibeee/compare/v3.6.9...v3.6.10) (2025-03-18)
+
+
+### Bug Fixes
+
+* don't use device_class=energy for sensors using varh as the unit ([#122](https://github.com/luuuis/hass_wibeee/issues/122)) ([e33fc93](https://github.com/luuuis/hass_wibeee/commit/e33fc93ec4cb3b27646ec7e496d9e5b1a46e1ab7))
+
+
+### Build System
+
+* removed invalid release-as from release-please-config.json ([f314cdf](https://github.com/luuuis/hass_wibeee/commit/f314cdf1080be0dc4caa7b0e351a910b95e48468))
+
 ## [3.6.9](https://github.com/luuuis/hass_wibeee/compare/v3.6.8...v3.6.9) (2025-03-16)
 
 
