@@ -13,21 +13,22 @@ versions.
 
 Provides the following sensors, one for each clamp using `_L1`/`_L2`/`_L3` suffixes.
 
-| Sensor                                         | Unit  | Description       |
-| -----------------------------------------------|:------:|------------------|
-| `wibeee_<mac_addr>_active_energy`              | Wh    | Active Energy |
-| `wibeee_<mac_addr>_active_energy_produced`     | Wh    | Active Energy Produced |
-| `wibeee_<mac_addr>_active_energy_consumed`     | Wh    | Active Energy Consumed |
-| `wibeee_<mac_addr>_active_power`               | W     | Active Power |
-| `wibeee_<mac_addr>_apparent_power`             | VA    | Apparent Power |
-| `wibeee_<mac_addr>_capacitive_reactive_energy` | VArCh | Capacitive Reactive Energy |
-| `wibeee_<mac_addr>_capacitive_reactive_power`  | VArC  | Capacitive Reactive Power |
-| `wibeee_<mac_addr>_frequency`                  | Hz    | Frequency |
-| `wibeee_<mac_addr>_inductive_reactive_energy`  | VArLh | Inductive Reactive Energy |
-| `wibeee_<mac_addr>_inductive_reactive_power`   | VArL  | Inductive Reactive Power |
-| `wibeee_<mac_addr>_current`                    | A     | Current |
-| `wibeee_<mac_addr>_power_factor`               | PF    | Power Factor |
-| `wibeee_<mac_addr>_phase_voltage`              | V     | Phase Voltage |
+| Sensor                                            | Unit | Description                |
+|---------------------------------------------------|:----:|----------------------------|
+| `wibeee_<mac_addr>_l1_active_energy`              |  Wh  | Active Energy              |
+| `wibeee_<mac_addr>_l1_active_energy_produced`     |  Wh  | Active Energy Produced     |
+| `wibeee_<mac_addr>_l1_active_energy_consumed`     |  Wh  | Active Energy Consumed     |
+| `wibeee_<mac_addr>_l1_active_power`               |  W   | Active Power               |
+| `wibeee_<mac_addr>_l1_apparent_power`             |  VA  | Apparent Power             |
+| `wibeee_<mac_addr>_l1_capacitive_reactive_energy` | varh | Capacitive Reactive Energy |
+| `wibeee_<mac_addr>_l1_capacitive_reactive_power`  | var  | Capacitive Reactive Power  |
+| `wibeee_<mac_addr>_l1_frequency`                  |  Hz  | Frequency                  |
+| `wibeee_<mac_addr>_l1_inductive_reactive_energy`  | varh | Inductive Reactive Energy  |
+| `wibeee_<mac_addr>_l1_inductive_reactive_power`   | var  | Inductive Reactive Power   |
+| `wibeee_<mac_addr>_l1_reactive_power`             | var  | Reactive Power             |
+| `wibeee_<mac_addr>_l1_current`                    |  A   | Current                    |
+| `wibeee_<mac_addr>_l1_power_factor`               |  PF  | Power Factor               |
+| `wibeee_<mac_addr>_l1_phase_voltage`              |  V   | Phase Voltage              |
 
 In three-phase devices the `_L4` sensors contain the total readings across all phases.
 
