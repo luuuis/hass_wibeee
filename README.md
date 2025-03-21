@@ -11,7 +11,8 @@ versions.
 
 ### Sensors
 
-Provides the following sensors, one for each clamp using `_L1`/`_L2`/`_L3` suffixes.
+Provides the following sensors, one for each circuit using `l1`/`l2`/`l3` in the name and entity id. For three-phase
+devices there is an additional device and set of sensors containing the total readings across all phases.
 
 | Sensor                                            | Unit | Description                |
 |---------------------------------------------------|:----:|----------------------------|
@@ -30,7 +31,6 @@ Provides the following sensors, one for each clamp using `_L1`/`_L2`/`_L3` suffi
 | `wibeee_<mac_addr>_l1_power_factor`               |  PF  | Power Factor               |
 | `wibeee_<mac_addr>_l1_phase_voltage`              |  V   | Phase Voltage              |
 
-In three-phase devices the `_L4` sensors contain the total readings across all phases.
 
 ## Installation
 
