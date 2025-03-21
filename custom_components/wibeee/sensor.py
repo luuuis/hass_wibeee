@@ -42,7 +42,6 @@ from homeassistant.helpers.entity import DeviceInfo as HassDeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import StateType
-from homeassistant.util import slugify
 
 from .api import WibeeeAPI, DeviceInfo
 from .const import (
@@ -256,18 +255,16 @@ class WibeeeSensor(SensorEntity):
     def __init__(self, device: DeviceInfo, device_info: HassDeviceInfo, sensor_phase: str, sensor_type: SensorType, status_xml_param: str,
                  initial_value: StateType):
         """Initialize the sensor."""
-        [device_name, mac_addr] = [device.id, device.macAddr]
-        entity_id = slugify(f"{DOMAIN} {mac_addr} {sensor_type.friendly_name} L{sensor_phase}")
         self._attr_native_unit_of_measurement = sensor_type.unit
         self._attr_native_value = initial_value
         self._attr_available = True
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING if sensor_type.device_class in ENERGY_CLASSES else SensorStateClass.MEASUREMENT
         self._attr_device_class = sensor_type.device_class
-        self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
-        self._attr_name = f"{device_name} {sensor_type.friendly_name} L{sensor_phase}"
+        self._attr_unique_id = f"_{device.macAddr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
+        self._attr_name = f"{sensor_type.friendly_name}"
+        self._attr_has_entity_name = True
         self._attr_should_poll = False
         self._attr_device_info = device_info
-        self.entity_id = f"sensor.{entity_id}"  # we don't want this derived from the name
         self.status_xml_param = status_xml_param
         self.nest_push_param = f"{sensor_type.push_var_prefix}{'t' if sensor_phase == _PH4 else sensor_phase}"
 
@@ -283,9 +280,10 @@ class WibeeeSensor(SensorEntity):
 
 def _make_device_info(device: DeviceInfo, sensor_phase: str, via_device: DeviceInfo | None) -> HassDeviceInfo:
     mac_addr = device.macAddr
-    is_clamp = sensor_phase != _PH4
+    is_clamp = _is_clamp(sensor_phase)
 
-    device_name = f'Wibeee {short_mac(mac_addr)}'
+    unique_name = f'{device.id} {short_mac(device.macAddr)}'
+    device_name = unique_name if not _is_clamp(sensor_phase) else f'{unique_name} L{sensor_phase}'
     device_model = KNOWN_MODELS.get(device.model, 'Wibeee Energy Meter')
 
     return HassDeviceInfo(
@@ -294,9 +292,13 @@ def _make_device_info(device: DeviceInfo, sensor_phase: str, via_device: DeviceI
         via_device=(DOMAIN, f'{via_device.macAddr}') if via_device else None,
 
         # and now for the humans :)
-        name=device_name if not is_clamp else f"{device_name} Line {sensor_phase}",
+        name=device_name,
         model=device_model if not is_clamp else f'{device_model} Clamp',
         manufacturer='Smilics',
         configuration_url=f"http://{device.ipAddr}/" if not is_clamp else None,
         sw_version=f"{device.softVersion}" if not is_clamp else None,
     )
+
+
+def _is_clamp(sensor_phase: str) -> bool:
+    return sensor_phase != _PH4

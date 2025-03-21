@@ -23,13 +23,13 @@ def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 @patch.object(EntityPlatform, 'async_add_entities', wraps=EntityPlatform.async_add_entities, autospec=True)
-async def test_device_registry(spy_async_add_entities, mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
+async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
     devices_data = [
         [
-            DeviceInfo('Wibeee 1Ph', '00:11:00:11:00:11', '10.9.8', 'WBM', '1.2.3.4'),
+            DeviceInfo('Wibeee', 'xx:xx:xx:1P:AA:BB', '10.9.8', 'WBM', '1.2.3.4'),
             {'vrms1': '230'},
         ], [
-            DeviceInfo('Wibeee 3Ph', '11:00:11:00:11:00', '7.6.5', 'WBT', '4.3.2.1'),
+            DeviceInfo('Wibeee', 'xx:xx:xx:3P:CC:DD', '7.6.5', 'WBT', '4.3.2.1'),
             {'vrms1': '200', 'vrmst': '1000'},
         ],
     ]
@@ -52,17 +52,33 @@ async def test_device_registry(spy_async_add_entities, mock_async_fetch_device_i
     device_ids = {re.name: re.id for re in registry_devices}
 
     assert via_devices == {
-        'Wibeee 001100': None,
-        'Wibeee 001100 Line 1': device_ids['Wibeee 001100'],
-        'Wibeee 110011 Line 1': None,
+        'Wibeee 3PCCDD': None,
+        'Wibeee 3PCCDD L1': device_ids['Wibeee 3PCCDD'],
+        'Wibeee 1PAABB L1': None,
     }
 
     # ensure via_device is correct, HA will start to fail if not.
     added_sensors: list[WibeeeSensor] = [e for call_args in spy_async_add_entities.call_args_list for e in call_args.args[1]]
-    assert {s.name: s._attr_device_info['via_device'] for s in added_sensors} == {
-        'Wibeee 3Ph Phase Voltage L4': None,
-        'Wibeee 3Ph Phase Voltage L1': ('wibeee', '11:00:11:00:11:00'),
-        'Wibeee 1Ph Phase Voltage L1': None,
+    assert {s.entity_id: s._attr_device_info['via_device'] for s in added_sensors} == {
+        'sensor.wibeee_3pccdd_phase_voltage': None,
+        'sensor.wibeee_3pccdd_l1_phase_voltage': ('wibeee', 'xx:xx:xx:3P:CC:DD'),
+        'sensor.wibeee_1paabb_l1_phase_voltage': None,
+    }
+
+    entities = {id: hass.states.get(id) for id in hass.states.async_entity_ids('sensor')}
+
+    names = {id: entities[id].name for id in entities.keys()}
+    assert names == {
+        'sensor.wibeee_3pccdd_phase_voltage': 'Wibeee 3PCCDD Phase Voltage',
+        'sensor.wibeee_3pccdd_l1_phase_voltage': 'Wibeee 3PCCDD L1 Phase Voltage',
+        'sensor.wibeee_1paabb_l1_phase_voltage': 'Wibeee 1PAABB L1 Phase Voltage',
+    }
+
+    values = {id: entities[id].state for id in entities.keys()}
+    assert values == {
+        'sensor.wibeee_3pccdd_phase_voltage': '1000',
+        'sensor.wibeee_3pccdd_l1_phase_voltage': '200',
+        'sensor.wibeee_1paabb_l1_phase_voltage': '230',
     }
 
 
