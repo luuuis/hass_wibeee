@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/luuuis/hass_wibeee/compare/v3.6.9...v4.0.0) (2025-03-21)
+
+
+### Features
+
+* disable polling when polling interval is 0 ([#126](https://github.com/luuuis/hass_wibeee/issues/126)) ([2c77ae0](https://github.com/luuuis/hass_wibeee/commit/2c77ae0718404e6e5d3fd808d628c4afafd3158a))
+* update device and sensor names ([#128](https://github.com/luuuis/hass_wibeee/issues/128)) ([3e96d2a](https://github.com/luuuis/hass_wibeee/commit/3e96d2a30725257144eb73eabca7563d7d0bde6e))
+* use Local-only Push mode by default (no polling) ([#127](https://github.com/luuuis/hass_wibeee/issues/127)) ([6430411](https://github.com/luuuis/hass_wibeee/commit/64304115d9e76218432c6a3de578ae19dc8efaff))
+
+
+### Bug Fixes
+
+* don't use device_class=energy for sensors using varh as the unit ([#122](https://github.com/luuuis/hass_wibeee/issues/122)) ([e33fc93](https://github.com/luuuis/hass_wibeee/commit/e33fc93ec4cb3b27646ec7e496d9e5b1a46e1ab7))
+
 ## [3.6.9](https://github.com/luuuis/hass_wibeee/compare/v3.6.8...v3.6.9) (2025-03-16)
 
 
