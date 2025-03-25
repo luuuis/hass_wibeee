@@ -5,16 +5,23 @@ Vendor docs: https://support.wibeee.com/space/CH/184025089/XML
 Documentation: https://github.com/luuuis/hass_wibeee/
 
 """
+from enum import Enum, unique
+
 from . import CONF_MAC_ADDRESS
 
 REQUIREMENTS = ["xmltodict"]
 
 import logging
+import re
 from datetime import timedelta
 from typing import NamedTuple, Optional
 
-import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
+
+import homeassistant.helpers.config_validation as cv
+import homeassistant.helpers.device_registry as dr
+import homeassistant.helpers.entity_registry as er
+
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
     SensorDeviceClass,
@@ -35,21 +42,24 @@ from homeassistant.const import (
     UnitOfElectricPotential,
     UnitOfElectricCurrent,
     UnitOfEnergy,
+    Platform,
 )
 from homeassistant.core import HomeAssistant, callback, CALLBACK_TYPE
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.device_registry import DeviceEntry, DeviceRegistry
 from homeassistant.helpers.entity import DeviceInfo as HassDeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import StateType
 
-from .api import WibeeeAPI, DeviceInfo
+from .api import WibeeeAPI, DeviceInfo, WibeeeID
 from .const import (
     DOMAIN,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
     CONF_NEST_UPSTREAM,
+    CONF_WIBEEE_ID,
     NEST_PROXY_DISABLED,
 )
 from .nest import get_nest_proxy
@@ -74,6 +84,24 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
+@unique
+class Slot(Enum):
+    """Slot alphanumeric suffix for use in APIs: 1/2/3/t. See SlotNum."""
+    L1 = '1'
+    L2 = '2'
+    L3 = '3'
+    Top = 't'
+
+
+@unique
+class SlotNum(Enum):
+    """Slot numeric suffix for use internally: 1/2/3/4. See Slot."""
+    L1 = '1'
+    L2 = '2'
+    L3 = '3'
+    Top = '4'
+
+
 class SensorType(NamedTuple):
     """
     Wibeee supported sensor definition.
@@ -92,7 +120,7 @@ class SensorType(NamedTuple):
     "optional device class to use for the sensor (e.g.: 'voltage')"
 
 
-KNOWN_SENSORS = [
+KNOWN_SENSORS: dict[str, SensorType] = {s.unique_name.lower(): s for s in [
     SensorType('vrms', 'v', 'Vrms', 'Phase Voltage', UnitOfElectricPotential.VOLT, SensorDeviceClass.VOLTAGE),
     SensorType('irms', 'i', 'Irms', 'Current', UnitOfElectricCurrent.AMPERE, SensorDeviceClass.CURRENT),
     SensorType('freq', 'q', 'Frequency', 'Frequency', UnitOfFrequency.HERTZ, device_class=None),
@@ -107,7 +135,7 @@ KNOWN_SENSORS = [
     SensorType('eacprod', None, 'Active_Energy_Produced', 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereact', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
     SensorType('ereactc', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
-]
+]}
 
 KNOWN_MODELS = {
     'WBM': 'Wibeee 1Ph',
@@ -123,9 +151,6 @@ KNOWN_MODELS = {
     'WBP': 'Wibeee PLUG',
 }
 
-_PH4 = '4'
-"""A pseudo-phase that holds the overall metric in 3-phase devices."""
-
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Import existing configuration from YAML."""
@@ -139,25 +164,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     ))
 
 
-class StatusElement(NamedTuple):
-    phase: str
-    xml_name: str
-    sensor_type: SensorType
-
-
-def get_status_elements() -> list[StatusElement]:
-    """Returns the expected elements in the status XML response for this device."""
-
-    def get_xml_names(s: SensorType) -> list[(str, str)]:
-        return [(_PH4 if ph == 't' else ph, f"{s.poll_var_prefix}{ph}") for ph in ['1', '2', '3', 't']]
-
-    return [
-        StatusElement(phase, xml_name, sensor_type)
-        for sensor_type in KNOWN_SENSORS if sensor_type.poll_var_prefix is not None
-        for phase, xml_name in get_xml_names(sensor_type)
-    ]
-
-
 def update_sensors(sensors, update_source, lookup_key, data):
     if _LOGGER.isEnabledFor(logging.DEBUG):
         sensors_with_updates = [s for s in sensors if lookup_key(s) in data]
@@ -168,7 +174,8 @@ def update_sensors(sensors, update_source, lookup_key, data):
         s.update_value(value, update_source)
 
 
-def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo, sensors: list['WibeeeSensor'], scan_interval: timedelta) -> CALLBACK_TYPE:
+def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, wibeee_id: WibeeeID, sensors: list['WibeeeSensor'],
+                        scan_interval: timedelta) -> CALLBACK_TYPE:
     if scan_interval.total_seconds() == 0:
         return lambda: None
 
@@ -178,7 +185,7 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo,
     async def fetching_data(now=None):
         fetched = {}
         try:
-            fetched = await api.async_fetch_values(device.id, retries=3)
+            fetched = await api.async_fetch_values(wibeee_id, retries=3)
         except Exception as err:
             if now is None:
                 raise PlatformNotReady from err
@@ -188,8 +195,7 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, device: DeviceInfo,
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
 
-async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device: DeviceInfo, sensors: list['WibeeeSensor']):
-    mac_address = device.macAddr
+async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_addr: str, sensors: list['WibeeeSensor']):
     nest_proxy = await get_nest_proxy(hass)
 
     def on_pushed_data(pushed_data: dict) -> None:
@@ -197,10 +203,10 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, device
         update_sensors(pushed_sensors, 'Nest push', lambda s: s.nest_push_param, pushed_data)
 
     def unregister_listener():
-        nest_proxy.unregister_device(mac_address)
+        nest_proxy.unregister_device(mac_addr)
 
     upstream = entry.options.get(CONF_NEST_UPSTREAM)
-    nest_proxy.register_device(mac_address, on_pushed_data, upstream)
+    nest_proxy.register_device(mac_addr, on_pushed_data, upstream)
     return unregister_listener
 
 
@@ -210,6 +216,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     session = async_get_clientsession(hass)
     host = entry.data[CONF_HOST]
+    mac_addr = entry.data[CONF_MAC_ADDRESS]
+    wibeee_id = entry.data[CONF_WIBEEE_ID]
     scan_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds()))
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
     use_nest_proxy = entry.options.get(CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED) != NEST_PROXY_DISABLED
@@ -220,18 +228,59 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         await get_nest_proxy(hass)
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
-    device = await api.async_fetch_device_info(retries=5)
-    fetched_values = await api.async_fetch_values(device.id, retries=10)
-    status_elements = [e for e in get_status_elements() if e.xml_name in fetched_values]
 
-    phases = [e.phase for e in status_elements]
-    via_device = device if _PH4 in phases else None
-    devices = {phase: _make_device_info(device, phase, via_device=via_device if phase != _PH4 else None) for phase in phases}
+    async def create_fetched_entities() -> list['WibeeeSensor']:
+        device = await api.async_fetch_device_info(retries=5)
+        fetched_values = await api.async_fetch_values(device.id, retries=10)
 
-    sensors = [
-        WibeeeSensor(device, devices[e.phase], e.phase, e.sensor_type, e.xml_name, fetched_values.get(e.xml_name))
-        for e in reversed(sorted(status_elements, key=lambda e: e.phase))  # ensure "total" sensors are added first
-    ]
+        known_poll_vars = {f"{stype.poll_var_prefix}{slot.value}": (stype, SlotNum[slot.name])
+                           for stype in KNOWN_SENSORS.values() if stype.poll_var_prefix
+                           for slot in Slot}
+        fetched_slot_nums = {slot_num for v in fetched_values if v in known_poll_vars for _, slot_num in [known_poll_vars[v]]}
+        via_device = device if SlotNum.Top in fetched_slot_nums else None
+        devices = {slot_num: _make_device_info(device, slot_num, via_device=via_device if _is_clamp(slot_num) else None) for slot_num in
+                   fetched_slot_nums}
+
+        return [
+            WibeeeSensor(mac_addr, devices[slot_num], slot_num, sensor_type, fetched_values.get(poll_var))
+            for poll_var in fetched_values if poll_var in known_poll_vars
+            for sensor_type, slot_num in [known_poll_vars[poll_var]]
+        ]
+
+    def rehydrate_saved_entities() -> list['WibeeeSensor']:
+        device_registry = dr.async_get(hass)
+        entity_registry = er.async_get(hass)
+
+        # device | identifiers={(DOMAIN, f'{mac_addr}_L{sensor_phase}' if is_clamp else mac_addr)},
+        ha_devices: dict[str, HassDeviceInfo] = {
+            device_id: _rehydrate_device_info(device_registry, d)
+            for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+            if (ids := [i[1] for i in d.identifiers if i[0] == DOMAIN])
+            for device_id in ids
+        }
+
+        ha_sensors: list[WibeeeSensor] = [
+            WibeeeSensor(device_mac_addr, device, slot_num, sensor_type, initial_value=None)
+            for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id)
+            if entity_entry.domain == Platform.SENSOR
+
+            # sensor.unique_id = f"_{device_mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
+            if entity_entry.unique_id.count('_') >= 3
+            for device_mac_addr, unique_name, slot_num_value in [re.search(r'_([^_]+)_(\w+)_(\d)', entity_entry.unique_id).groups()]
+            if (slot_num := SlotNum(slot_num_value))
+
+            if unique_name in KNOWN_SENSORS
+            if (sensor_type := KNOWN_SENSORS[unique_name])
+
+            if (device_id := f'{mac_addr}_L{slot_num.value}' if _is_clamp(slot_num) else mac_addr)
+            if device_id in ha_devices
+            if (device := ha_devices[device_id])
+        ]
+
+        return ha_sensors
+
+    entities = rehydrate_saved_entities() or await create_fetched_entities()
+    sensors = sorted(entities, key=lambda e: e.status_xml_param, reverse=True)  # ensure "total" sensors are added first
 
     for sensor in sensors:
         _LOGGER.debug("Adding '%s' (unique_id=%s)", sensor, sensor.unique_id)
@@ -239,11 +288,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     disposers = hass.data[DOMAIN][entry.entry_id]['disposers']
 
-    remove_fetch_listener = setup_local_polling(hass, api, device, sensors, scan_interval)
+    remove_fetch_listener = setup_local_polling(hass, api, wibeee_id, sensors, scan_interval)
     disposers.update(fetch_status=remove_fetch_listener)
 
     if use_nest_proxy:
-        remove_push_listener = await async_setup_local_push(hass, entry, device, sensors)
+        remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
         disposers.update(push_listener=remove_push_listener)
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, scan_interval={scan_interval}, timeout={timeout})")
@@ -253,21 +302,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, device: DeviceInfo, device_info: HassDeviceInfo, sensor_phase: str, sensor_type: SensorType, status_xml_param: str,
-                 initial_value: StateType):
+    def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot: SlotNum, sensor_type: SensorType, initial_value: StateType):
         """Initialize the sensor."""
         self._attr_native_unit_of_measurement = sensor_type.unit
         self._attr_native_value = initial_value
         self._attr_available = True
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING if sensor_type.device_class in ENERGY_CLASSES else SensorStateClass.MEASUREMENT
         self._attr_device_class = sensor_type.device_class
-        self._attr_unique_id = f"_{device.macAddr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
+        self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{slot.value}"
         self._attr_name = f"{sensor_type.friendly_name}"
         self._attr_has_entity_name = True
         self._attr_should_poll = False
         self._attr_device_info = device_info
-        self.status_xml_param = status_xml_param
-        self.nest_push_param = f"{sensor_type.push_var_prefix}{'t' if sensor_phase == _PH4 else sensor_phase}"
+        self.status_xml_param = f"{sensor_type.poll_var_prefix}{Slot[slot.name].value}"
+        self.nest_push_param = f"{sensor_type.push_var_prefix}{Slot[slot.name].value}"
 
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:
@@ -279,17 +327,17 @@ class WibeeeSensor(SensorEntity):
             _LOGGER.debug("Updating from %s: %s", update_source, self)
 
 
-def _make_device_info(device: DeviceInfo, sensor_phase: str, via_device: DeviceInfo | None) -> HassDeviceInfo:
+def _make_device_info(device: DeviceInfo, slot_num: SlotNum, via_device: DeviceInfo | None) -> HassDeviceInfo:
     mac_addr = device.macAddr
-    is_clamp = _is_clamp(sensor_phase)
+    is_clamp = _is_clamp(slot_num)
 
     unique_name = f'{device.id} {short_mac(device.macAddr)}'
-    device_name = unique_name if not _is_clamp(sensor_phase) else f'{unique_name} L{sensor_phase}'
+    device_name = unique_name if not is_clamp else f'{unique_name} L{slot_num.value}'
     device_model = KNOWN_MODELS.get(device.model, 'Wibeee Energy Meter')
 
     return HassDeviceInfo(
         # identifiers and links
-        identifiers={(DOMAIN, f'{mac_addr}_L{sensor_phase}' if is_clamp else mac_addr)},
+        identifiers={(DOMAIN, f'{mac_addr}_L{slot_num.value}' if is_clamp else mac_addr)},
         via_device=(DOMAIN, f'{via_device.macAddr}') if via_device else None,
 
         # and now for the humans :)
@@ -301,5 +349,17 @@ def _make_device_info(device: DeviceInfo, sensor_phase: str, via_device: DeviceI
     )
 
 
-def _is_clamp(sensor_phase: str) -> bool:
-    return sensor_phase != _PH4
+def _rehydrate_device_info(device_registry: DeviceRegistry, d: DeviceEntry) -> HassDeviceInfo:
+    via_device_id = device_registry.async_get(d.via_device_id)
+    return HassDeviceInfo(identifiers=d.identifiers,
+                          via_device=next(iter(via_device_id.identifiers)) if via_device_id else None,
+                          name=d.name,
+                          model=d.model,
+                          manufacturer=d.manufacturer,
+                          configuration_url=d.configuration_url,
+                          sw_version=d.sw_version)
+
+
+def _is_clamp(slot_or_slot_num: Slot | SlotNum) -> bool:
+    """Returns whether a slot (1/2/3/t) or slot_num (1/2/3/4) is a clamp."""
+    return slot_or_slot_num and slot_or_slot_num not in [SlotNum.Top, Slot.Top]
