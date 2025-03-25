@@ -14,7 +14,15 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector
 
 from .api import WibeeeAPI
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL, CONF_NEST_UPSTREAM, NEST_ALL_UPSTREAMS, NEST_NULL_UPSTREAM
+from .const import (
+    DOMAIN,
+    DEFAULT_SCAN_INTERVAL,
+    CONF_MAC_ADDRESS,
+    CONF_NEST_UPSTREAM,
+    CONF_WIBEEE_ID,
+    NEST_ALL_UPSTREAMS,
+    NEST_NULL_UPSTREAM,
+)
 from .util import short_mac
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,12 +41,16 @@ async def validate_input(hass: HomeAssistant, user_input: dict) -> [str, str, di
     unique_id = mac_addr
     name = f"Wibeee {short_mac(mac_addr)}"
 
-    return name, unique_id, {CONF_HOST: user_input[CONF_HOST], }
+    return name, unique_id, {
+        CONF_HOST: user_input[CONF_HOST],
+        CONF_MAC_ADDRESS: device.macAddr,
+        CONF_WIBEEE_ID: device.id,
+    }
 
 
 class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Wibeee config flow."""
-    VERSION = 2
+    VERSION = 3
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""

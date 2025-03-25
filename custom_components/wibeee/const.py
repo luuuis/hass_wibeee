@@ -10,6 +10,12 @@ DEFAULT_TIMEOUT = timedelta(seconds=10)
 
 CONF_NEST_UPSTREAM = 'nest_upstream'
 
+CONF_MAC_ADDRESS = 'mac_address'
+"""Device's MAC address."""
+
+CONF_WIBEEE_ID = 'wibeee_id'
+"""Device's Wibeee ID, used for polling values.xml API."""
+
 
 def _format_options(upstreams: dict[str, str]) -> list[SelectOptionDict]:
     return [SelectOptionDict(label=f'{cloud} ({url})', value=url) for cloud, url in upstreams.items()]

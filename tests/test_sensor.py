@@ -26,10 +26,10 @@ def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, 
 async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
     devices_data = [
         [
-            DeviceInfo('Wibeee', 'xx:xx:xx:1P:AA:BB', '10.9.8', 'WBM', '1.2.3.4'),
+            DeviceInfo('Wibeee', 'xxxxxx1paabb', '10.9.8', 'WBM', '1.2.3.4'),
             {'vrms1': '230'},
         ], [
-            DeviceInfo('Wibeee', 'xx:xx:xx:3P:CC:DD', '7.6.5', 'WBT', '4.3.2.1'),
+            DeviceInfo('Wibeee', 'xxxxxx3pccdd', '7.6.5', 'WBT', '4.3.2.1'),
             {'vrms1': '200', 'vrmst': '1000'},
         ],
     ]
@@ -61,7 +61,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
     added_sensors: list[WibeeeSensor] = [e for call_args in spy_async_add_entities.call_args_list for e in call_args.args[1]]
     assert {s.entity_id: s._attr_device_info['via_device'] for s in added_sensors} == {
         'sensor.wibeee_3pccdd_phase_voltage': None,
-        'sensor.wibeee_3pccdd_l1_phase_voltage': ('wibeee', 'xx:xx:xx:3P:CC:DD'),
+        'sensor.wibeee_3pccdd_l1_phase_voltage': ('wibeee', 'xxxxxx3pccdd'),
         'sensor.wibeee_1paabb_l1_phase_voltage': None,
     }
 
@@ -85,13 +85,21 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 async def test_migrate_entry(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
-    entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.1'}, version=1)
+    info = DeviceInfo('ozymandias', 'abcdabcdabcd', '4.5.6', 'WBB', '127.0.0.2')
+    mock_async_fetch_device_info.return_value = info
+
+    entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.2'}, version=1)
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
     configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
-    assert configured_entry.version == 2
+    assert configured_entry.data == {
+        'host': '127.0.0.2',  # to set up polling or refresh available sensors
+        'mac_address': 'abcdabcdabcd',  # to set up local push
+        'wibeee_id': 'ozymandias',  # Wibeee id, needed for values.xml API
+    }
+    assert configured_entry.version == 3
 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
@@ -101,7 +109,7 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
 
     caplog.set_level(logging.WARNING)
 
-    info = DeviceInfo('Wibeee 1Ph', '00:11:00:11:00:11', '10.9.8', 'WBM', '1.2.3.4')
+    info = DeviceInfo('Wibeee 1Ph', '001100110011', '10.9.8', 'WBM', '1.2.3.4')
     mock_async_fetch_device_info.return_value = info
     values = _build_values(info, {f'{s.poll_var_prefix}1': '123' for s in KNOWN_SENSORS})
     mock_async_fetch_values.return_value = values
