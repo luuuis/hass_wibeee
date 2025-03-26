@@ -110,10 +110,10 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 async def test_migrate_entry(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
-    info = DeviceInfo('ozymandias', 'abcdabcdabcd', '4.5.6', 'WBB', '127.0.0.2')
-    mock_async_fetch_device_info.return_value = info
-
     entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.2'}, version=1)
+    info = DeviceInfo('ozymandias', 'abcdabcdabcd', '4.5.6', 'WBB', '127.0.0.2')
+
+    mock_async_fetch_device_info.return_value = info
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
