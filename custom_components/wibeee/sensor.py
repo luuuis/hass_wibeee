@@ -5,7 +5,6 @@ Vendor docs: https://support.wibeee.com/space/CH/184025089/XML
 Documentation: https://github.com/luuuis/hass_wibeee/
 
 """
-from . import CONF_MAC_ADDRESS
 
 REQUIREMENTS = ["xmltodict"]
 
