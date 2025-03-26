@@ -195,7 +195,7 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, wibeee_id: WibeeeID
     return async_track_time_interval(hass, fetching_data, scan_interval)
 
 
-async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_addr: str, sensors: list['WibeeeSensor']):
+async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_address: str, sensors: list['WibeeeSensor']):
     nest_proxy = await get_nest_proxy(hass)
 
     def on_pushed_data(pushed_data: dict) -> None:
@@ -203,10 +203,10 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_ad
         update_sensors(pushed_sensors, 'Nest push', lambda s: s.nest_push_param, pushed_data)
 
     def unregister_listener():
-        nest_proxy.unregister_device(mac_addr)
+        nest_proxy.unregister_device(mac_address)
 
     upstream = entry.options.get(CONF_NEST_UPSTREAM)
-    nest_proxy.register_device(mac_addr, on_pushed_data, upstream)
+    nest_proxy.register_device(mac_address, on_pushed_data, upstream)
     return unregister_listener
 
 
@@ -230,6 +230,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
 
     async def create_fetched_entities() -> list['WibeeeSensor']:
+        """Discover existing sensors using Wibeee APIs."""
         device = await api.async_fetch_device_info(retries=5)
         fetched_values = await api.async_fetch_values(device.id, retries=10)
 
@@ -248,6 +249,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         ]
 
     def rehydrate_saved_entities() -> list['WibeeeSensor']:
+        """Attempt to restore previously-created sensors based on the Device and Entry registries without using Wibeee APIs."""
         device_registry = dr.async_get(hass)
         entity_registry = er.async_get(hass)
 
