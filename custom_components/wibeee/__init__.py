@@ -9,7 +9,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM
+from .api import WibeeeAPI
+from .config_flow import validate_input
+from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,7 +69,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     _LOGGER.debug("Migrating from version %s", config_entry.version)
 
     # Migrate from "Use Nest Proxy" checkbox to "Nest Cloud Service" select list
-    if config_entry.version == 1:
+    if config_entry.version < 2:
         v1_conf_nest_proxy_enable = 'nest_proxy_enable'  # v1 config option that is no longer used.
 
         options = config_entry.options
@@ -77,6 +79,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         new_options = {k: v for k, v in options.items() if k != v1_conf_nest_proxy_enable} | {CONF_NEST_UPSTREAM: nest_upstream}
 
         hass.config_entries.async_update_entry(config_entry, version=2, options=new_options)
-        _LOGGER.info("Migration to version %s successful", config_entry.version)
+        _LOGGER.info("Migration to version %s successful, defaulting to: %s", config_entry.version, nest_upstream)
+
+    # Store the MAC address and ID in the ConfigEntry, saving us from gymnastics on each sensor restore later on
+    if config_entry.version < 3:
+        mac_addr, _, new_data = await validate_input(hass, dict(config_entry.data))
+
+        hass.config_entries.async_update_entry(config_entry, version=3, data=new_data)
+        _LOGGER.info("Migration to version %s successful, saved MAC address: %s", config_entry.version, new_data[CONF_MAC_ADDRESS])
 
     return True
