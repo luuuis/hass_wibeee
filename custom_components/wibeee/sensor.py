@@ -297,7 +297,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
         disposers.update(push_listener=remove_push_listener)
 
-    _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, scan_interval={scan_interval}, timeout={timeout})")
+    _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
+                 f"use_nest_proxy={use_nest_proxy}, scan_interval={scan_interval}, timeout={timeout})")
     return True
 
 

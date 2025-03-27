@@ -10,6 +10,7 @@ from homeassistant.components.network import async_get_source_ip
 from homeassistant.components.network.const import PUBLIC_TARGET_IP
 from homeassistant.core import callback, Event
 from homeassistant.helpers import singleton
+
 from .const import NEST_NULL_UPSTREAM
 
 LOGGER = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ class NestProxy(object):
     _listeners: Dict[str, DeviceConfig] = {}
 
     def register_device(self, mac_address: str, push_data_listener: Callable[[Dict], None], upstream: str):
+        LOGGER.debug('Registered MAC address %s with upstream: %s', mac_address, upstream)
         self._listeners[mac_address] = DeviceConfig(
             handle_push_data=push_data_listener,
             upstream=upstream
@@ -46,6 +48,7 @@ class NestProxy(object):
 
     def unregister_device(self, mac_address: str):
         self._listeners.pop(mac_address)
+        LOGGER.debug('Unregistered device: %s', mac_address)
 
     def get_device_info(self, mac_addr: str) -> DeviceConfig | None:
         return self._listeners.get(mac_addr, None)
