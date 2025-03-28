@@ -9,12 +9,13 @@ import re
 
 import homeassistant.helpers.entity_registry as er
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 
 from .api import WibeeeAPI
 from .config_flow import validate_input
-from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID
+from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, \
+    DEFAULT_SCAN_INTERVAL, NEST_NULL_UPSTREAM
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,8 +105,14 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             _LOGGER.info("Unable to migrate offline based on %d entries: %s", len(entries), unique_id_names)
             _, _, new_data = await validate_input(hass, dict(saved_data))
 
-        hass.config_entries.async_update_entry(config_entry, version=3, data=new_data)
-        _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version,
-                     {k: v for k, v in new_data.items() if k not in saved_data})
+        upstream = config_entry.options[CONF_NEST_UPSTREAM]
+        new_options = dict(config_entry.options) | {
+            # in v4 we will no longer poll. disable polling on each entry individually for now.
+            CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL.total_seconds(),
+            CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM if upstream == NEST_PROXY_DISABLED else upstream
+        }
+
+        hass.config_entries.async_update_entry(config_entry, version=3, data=new_data, options=new_options)
+        _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'data': new_data, 'options': new_options})
 
     return True
