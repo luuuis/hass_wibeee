@@ -18,10 +18,13 @@ StatusResponse = dict[str, StateType]
 _VALUES_SCRUB_KEYS = ['securKey', 'ssid']
 """Values that we'll attempt to scrub from the values.xml response."""
 
+type WibeeeID = str
+"""The id of a Wibeee device."""
+
 
 class DeviceInfo(NamedTuple):
-    id: str
-    "Device ID (default is 'WIBEEE')"
+    id: WibeeeID
+    "API ID (default is 'WIBEEE')"
     macAddr: str
     "MAC address (formatted for use in HA)"
     softVersion: str
@@ -44,13 +47,13 @@ class WibeeeAPI(object):
         self.max_wait = min(timedelta(seconds=5), timeout)
         _LOGGER.info("Initializing WibeeeAPI with host: %s, timeout %s, max_wait: %s", host, self.timeout, self.max_wait)
 
-    async def async_fetch_values(self, device_id: str, var_names: list[str] = None, retries: int = 0) -> Dict[str, any]:
+    async def async_fetch_values(self, wibeee_id: WibeeeID, var_names: list[str] = None, retries: int = 0) -> Dict[str, any]:
         """Fetches the values from Wibeee as a dict, optionally retries"""
         if var_names:
-            var_ids = [f"{quote_plus(device_id)}.{quote_plus(var)}" for var in var_names]
+            var_ids = [f"{quote_plus(wibeee_id)}.{quote_plus(var)}" for var in var_names]
             query = f'var={"&".join(var_ids)}'
         else:
-            query = f'id={quote_plus(device_id)}'
+            query = f'id={quote_plus(wibeee_id)}'
 
         values = await self.async_fetch_url(f'http://{self.host}/services/user/values.xml?{query}', retries, scrub_keys=_VALUES_SCRUB_KEYS)
 
@@ -63,13 +66,13 @@ class WibeeeAPI(object):
     async def async_fetch_device_info(self, retries: int = 0) -> Optional[DeviceInfo]:
         # <devices><id>WIBEEE</id></devices>
         devices = await self.async_fetch_url(f'http://{self.host}/services/user/devices.xml', retries)
-        device_id = devices['devices']['id']
+        wibeee_id = devices['devices']['id']
 
         var_names = ['macAddr', 'softVersion', 'model', 'ipAddr']
-        device_vars = await self.async_fetch_values(device_id, var_names, retries)
+        device_vars = await self.async_fetch_values(wibeee_id, var_names, retries)
 
         return DeviceInfo(
-            device_id,
+            wibeee_id,
             device_vars['macAddr'].replace(':', ''),
             device_vars['softVersion'],
             device_vars['model'],
