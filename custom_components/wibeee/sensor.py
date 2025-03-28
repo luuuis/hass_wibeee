@@ -254,14 +254,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entity_registry = er.async_get(hass)
 
         # device | identifiers={(DOMAIN, f'{mac_addr}_L{sensor_phase}' if is_clamp else mac_addr)},
-        ha_devices: dict[str, HassDeviceInfo] = {
+        reg_devices: dict[str, HassDeviceInfo] = {
             device_id: _rehydrate_device_info(device_registry, d)
             for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id)
             if (ids := [i[1] for i in d.identifiers if i[0] == DOMAIN])
             for device_id in ids
         }
 
-        ha_sensors: list[WibeeeSensor] = [
+        reg_sensors: list[WibeeeSensor] = [
             WibeeeSensor(device_mac_addr, device, slot_num, sensor_type, initial_value=None)
             for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id)
             if entity_entry.domain == Platform.SENSOR
@@ -275,11 +275,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             if (sensor_type := KNOWN_SENSORS[unique_name])
 
             if (device_id := f'{mac_addr}_L{slot_num.value}' if _is_clamp(slot_num) else mac_addr)
-            if device_id in ha_devices
-            if (device := ha_devices[device_id])
+            if device_id in reg_devices
+            if (device := reg_devices[device_id])
         ]
 
-        return ha_sensors
+        return reg_sensors
 
     entities = rehydrate_saved_entities() or await create_fetched_entities()
     sensors = sorted(entities, key=lambda e: e.status_xml_param, reverse=True)  # ensure "total" sensors are added first
