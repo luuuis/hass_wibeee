@@ -1,7 +1,8 @@
 import logging
 from typing import Dict
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
+import homeassistant.helpers.entity_registry as er
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry
 from homeassistant.helpers.entity_platform import EntityPlatform
@@ -107,9 +108,8 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
     })
 
 
-@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
-async def test_migrate_entry(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
+async def test_migrate_entry_1_to_3(mock_async_fetch_device_info, hass: HomeAssistant):
     entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.2'}, version=1)
     info = DeviceInfo('ozymandias', 'abcdabcdabcd', '4.5.6', 'WBB', '127.0.0.2')
 
@@ -124,6 +124,32 @@ async def test_migrate_entry(mock_async_fetch_device_info, mock_async_fetch_valu
         'mac_address': 'abcdabcdabcd',  # to set up local push
         'wibeee_id': 'ozymandias',  # Wibeee id, needed for values.xml API
     }
+    assert configured_entry.options == {'scan_interval': 0.0, 'nest_upstream': 'proxy_null'}
+    assert configured_entry.version == 3
+
+
+@patch.object(er, 'async_entries_for_config_entry', autospec=True)
+async def test_migrate_entry_2_to_3_offline(mock_async_entries_for_config_entry, hass: HomeAssistant):
+    entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.2'}, options={'scan_interval': 30, 'nest_upstream': 'proxy_disabled'}, version=2)
+    mock_async_entries_for_config_entry.side_effect = lambda _, entry_id: [] if entry_id != entry.entry_id else [
+        # self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
+        # self._attr_name = f"{device_name} {sensor_type.friendly_name} L{sensor_phase}"
+        MagicMock(spec=er.RegistryEntry, has_entity_name=False, unique_id='_abcdabcdabcd_apparent_power_1', original_name='Downstairs Apparent Power L1'),
+        MagicMock(spec=er.RegistryEntry, has_entity_name=False, unique_id='_abcdabcdabcd_active_energy_1', original_name='Downstairs Active Energy L1'),
+        MagicMock(spec=er.RegistryEntry, has_entity_name=False, unique_id='_abcdabcdabcd_vrms_1', original_name='Downstairs Phase Voltage L1'),
+    ]
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert configured_entry.data == {
+        'host': '127.0.0.2',  # to set up polling or refresh available sensors
+        'mac_address': 'abcdabcdabcd',  # to set up local push
+        'wibeee_id': 'Downstairs',  # Wibeee id, needed for values.xml API
+    }
+    assert configured_entry.options == {'scan_interval': 0.0, 'nest_upstream': 'proxy_null'}
     assert configured_entry.version == 3
 
 
