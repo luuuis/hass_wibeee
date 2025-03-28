@@ -3,6 +3,7 @@
   "release-type": "python",
   "packages": {
     ".": {
+      "versioning": "prerelease",
       "extra-files": [
         "custom_components/wibeee/manifest.json"
       ]
