@@ -90,19 +90,18 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
         # prior to #138 the Wibeee ID was used to generate the entity's name. leverage this fact to
         # reverse-engineer the MAC address and ID from the registry entities, avoiding an API call.
-        unique_id_names = {e.unique_id: e.original_name
-                           for e in er.async_entries_for_config_entry(er.async_get(hass), config_entry.entry_id)
-                           if not e.has_entity_name}
+        entries = er.async_entries_for_config_entry(er.async_get(hass), config_entry.entry_id)
+        unique_id_names = {e.unique_id: e.original_name for e in entries if not e.has_entity_name}
 
         mac_addr = os.path.commonprefix(list(unique_id_names.keys()))
         original_name = os.path.commonprefix(list(unique_id_names.values()))
-        if re.match(r'_[0-9a-f]{12}_', mac_addr) and re.match(r'\w+ ', original_name):
+        if len(unique_id_names) == len(entries) and re.match(r'_[0-9a-f]{12}_', mac_addr) and re.match(r'\w+ ', original_name):
             new_data = saved_data | {
                 CONF_MAC_ADDRESS: mac_addr[1:-1],
                 CONF_WIBEEE_ID: original_name[:-1],
             }
         else:
-            _LOGGER.info("Couldn't migrate offline: %s", unique_id_names)
+            _LOGGER.info("Unable to migrate offline based on %d entries: %s", len(entries), unique_id_names)
             _, _, new_data = await validate_input(hass, dict(saved_data))
 
         hass.config_entries.async_update_entry(config_entry, version=3, data=new_data)
