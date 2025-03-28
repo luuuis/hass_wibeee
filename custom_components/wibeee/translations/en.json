@@ -28,5 +28,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "wibeee_local_push_not_received": {
+      "title": "{device_name} is not receiving updates",
+      "description": "{device_name} has not received an update since {last_updated}. Configure Local Push to get updates when sensor values change."
+    }
   }
 }

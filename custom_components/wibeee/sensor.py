@@ -13,7 +13,7 @@ REQUIREMENTS = ["xmltodict"]
 
 import logging
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import NamedTuple, Optional
 
 import voluptuous as vol
@@ -21,6 +21,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
 import homeassistant.helpers.entity_registry as er
+import homeassistant.helpers.issue_registry as ir
 
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -52,6 +53,8 @@ from homeassistant.helpers.entity import DeviceInfo as HassDeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.issue_registry import create_issue, delete_issue
+from homeassistant.util import dt
 
 from .api import WibeeeAPI, DeviceInfo, WibeeeID
 from .const import (
@@ -293,6 +296,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     remove_fetch_listener = setup_local_polling(hass, api, wibeee_id, sensors, scan_interval)
     disposers.update(fetch_status=remove_fetch_listener)
 
+    remove_issue_maintainer = setup_issue_maintainer(hass, entry, sensors)
+    disposers.update(issue_maintainer=remove_issue_maintainer)
+
     if use_nest_proxy:
         remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
         disposers.update(push_listener=remove_push_listener)
@@ -300,6 +306,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
                  f"use_nest_proxy={use_nest_proxy}, scan_interval={scan_interval}, timeout={timeout})")
     return True
+
+
+def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: list['WibeeeSensor']) -> CALLBACK_TYPE:
+    issue_id = f'{entry.entry_id}_local_push'
+
+    def check_for_issues(now: datetime = None):
+        last_updated = max([hass.states.get(s.entity_id).last_updated for s in sensors])
+        if last_updated < dt.utcnow() - timedelta(minutes=5):
+            devices = [d for d in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id) if not d.via_device_id]
+            device_name = devices[0].name if devices else entry.data[CONF_WIBEEE_ID]
+
+            # dr.async_entries_for_config_entry
+            create_issue(hass, DOMAIN, issue_id,
+                         is_fixable=False,
+                         severity=ir.IssueSeverity.WARNING,
+                         translation_key="wibeee_local_push_not_received",
+                         translation_placeholders={"device_name": device_name, "last_updated": last_updated.ctime()},
+                         learn_more_url='https://github.com/luuuis/hass_wibeee/?tab=readme-ov-file#-configuring-local-push-optional-advanced')
+        else:
+            delete_issue(hass, DOMAIN, issue_id)
+
+    return async_track_time_interval(hass, check_for_issues, timedelta(seconds=10), name=f'Wibeee {issue_id} issue maintainer')
 
 
 class WibeeeSensor(SensorEntity):
