@@ -45,17 +45,25 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
         assert via_devices == {
             'Wibeee 3PCCDD': None,
             'Wibeee 3PCCDD L1': device_ids.get('Wibeee 3PCCDD', 'missing id for device'),
-            'Wibeee 1PAABB L1': None,
+            'Wibeee 1PAABB': None,
+            'Wibeee 1PAABB L1': device_ids.get('Wibeee 1PAABB', 'missing id for device'),
         }
 
     def assert_entity_names():
         entities = {id: hass.states.get(id) for id in hass.states.async_entity_ids('sensor')}
         names = {id: entities[id].name for id in entities.keys() if 'restored' not in entities[id].attributes}
         assert names == {
-            'sensor.wibeee_3pccdd_phase_voltage': 'Wibeee 3PCCDD Phase Voltage',
-            'sensor.wibeee_3pccdd_l1_phase_voltage': 'Wibeee 3PCCDD L1 Phase Voltage',
+            'sensor.wibeee_1paabb_firmware': 'Wibeee 1PAABB Firmware',
+            'sensor.wibeee_1paabb_mac_address': 'Wibeee 1PAABB MAC Address',
+            'sensor.wibeee_1paabb_ip_address': 'Wibeee 1PAABB IP Address',
             'sensor.wibeee_1paabb_l1_active_power': 'Wibeee 1PAABB L1 Active Power',
             'sensor.wibeee_1paabb_l1_phase_voltage': 'Wibeee 1PAABB L1 Phase Voltage',
+
+            'sensor.wibeee_3pccdd_firmware': 'Wibeee 3PCCDD Firmware',
+            'sensor.wibeee_3pccdd_mac_address': 'Wibeee 3PCCDD MAC Address',
+            'sensor.wibeee_3pccdd_ip_address': 'Wibeee 3PCCDD IP Address',
+            'sensor.wibeee_3pccdd_phase_voltage': 'Wibeee 3PCCDD Phase Voltage',
+            'sensor.wibeee_3pccdd_l1_phase_voltage': 'Wibeee 3PCCDD L1 Phase Voltage',
         }
 
     def assert_entity_values(expected):
@@ -79,10 +87,17 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
     assert_via_devices()
     assert_entity_names()
     assert_entity_values({
-        'sensor.wibeee_3pccdd_phase_voltage': '1000',
-        'sensor.wibeee_3pccdd_l1_phase_voltage': '200',
+        'sensor.wibeee_1paabb_firmware': '10.9.8',
+        'sensor.wibeee_1paabb_mac_address': 'xxxxxx1paabb',
+        'sensor.wibeee_1paabb_ip_address': '1.2.3.4',
         'sensor.wibeee_1paabb_l1_active_power': '10000',
         'sensor.wibeee_1paabb_l1_phase_voltage': '230',
+
+        'sensor.wibeee_3pccdd_firmware': '7.6.5',
+        'sensor.wibeee_3pccdd_mac_address': 'xxxxxx3pccdd',
+        'sensor.wibeee_3pccdd_ip_address': '4.3.2.1',
+        'sensor.wibeee_3pccdd_phase_voltage': '1000',
+        'sensor.wibeee_3pccdd_l1_phase_voltage': '200',
     })
 
     assert mock_async_fetch_device_info.call_count == 2
@@ -101,8 +116,14 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
     assert_via_devices()
     assert_entity_names()
     assert_entity_values({
+        'sensor.wibeee_3pccdd_mac_address': 'unknown',
+        'sensor.wibeee_3pccdd_ip_address': 'unknown',
+        'sensor.wibeee_3pccdd_firmware': 'unknown',
         'sensor.wibeee_3pccdd_phase_voltage': 'unknown',
         'sensor.wibeee_3pccdd_l1_phase_voltage': 'unknown',
+        'sensor.wibeee_1paabb_mac_address': 'unknown',
+        'sensor.wibeee_1paabb_ip_address': 'unknown',
+        'sensor.wibeee_1paabb_firmware': 'unknown',
         'sensor.wibeee_1paabb_l1_active_power': 'unknown',
         'sensor.wibeee_1paabb_l1_phase_voltage': 'unknown',
     })
@@ -162,7 +183,7 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
 
     info = DeviceInfo('Wibeee 1Ph', '001100110011', '10.9.8', 'WBM', '1.2.3.4')
     mock_async_fetch_device_info.return_value = info
-    values = _build_values(info, {f'{s.poll_var_prefix}1': '123' for s in KNOWN_SENSORS.values()})
+    values = _build_values(info, {f'{s.poll_var_prefix}{s.slots[0].value}': '123' for s in KNOWN_SENSORS})
     mock_async_fetch_values.return_value = values
 
     entry = MockConfigEntry(domain='wibeee', data={'host': '1.2.3.4'})
@@ -170,5 +191,5 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    warnings = [msg for logger, _, msg in caplog.record_tuples if logger == 'homeassistant.components.sensor' and 'wibeee' in msg]
+    warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
     assert len(warnings) is 0
