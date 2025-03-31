@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 
 import homeassistant.helpers.entity_registry as er
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry
+from homeassistant.helpers import device_registry, entity_registry
 from homeassistant.helpers.entity_platform import EntityPlatform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -35,6 +35,9 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
         ],
     ]
 
+    entries = [MockConfigEntry(domain='wibeee', version=3, data={'host': info.ipAddr, 'mac_address': info.macAddr, 'wibeee_id': info.id})
+               for info, sensors in devices_data]
+
     def assert_via_devices():
         # ensure via_device is correct, HA will start to fail if not.
         registry = device_registry.async_get(hass)
@@ -47,6 +50,26 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
             'Wibeee 3PCCDD L1': device_ids.get('Wibeee 3PCCDD', 'missing id for device'),
             'Wibeee 1PAABB': None,
             'Wibeee 1PAABB L1': device_ids.get('Wibeee 1PAABB', 'missing id for device'),
+        }
+
+    def assert_unique_ids():
+        reg_entries = [reg_e
+                       for conf_e in entries
+                       for reg_e in entity_registry.async_entries_for_config_entry(er.async_get(hass), config_entry_id=conf_e.entry_id)]
+
+        unique_ids = {reg_e.entity_id: reg_e.unique_id for reg_e in reg_entries}
+        assert unique_ids == {
+            'sensor.wibeee_1paabb_firmware': '_xxxxxx1paabb_firmware_5',
+            'sensor.wibeee_1paabb_mac_address': '_xxxxxx1paabb_mac_address_5',
+            'sensor.wibeee_1paabb_ip_address': '_xxxxxx1paabb_ip_address_5',
+            'sensor.wibeee_1paabb_l1_active_power': '_xxxxxx1paabb_active_power_1',
+            'sensor.wibeee_1paabb_l1_phase_voltage': '_xxxxxx1paabb_vrms_1',
+
+            'sensor.wibeee_3pccdd_firmware': '_xxxxxx3pccdd_firmware_5',
+            'sensor.wibeee_3pccdd_mac_address': '_xxxxxx3pccdd_mac_address_5',
+            'sensor.wibeee_3pccdd_ip_address': '_xxxxxx3pccdd_ip_address_5',
+            'sensor.wibeee_3pccdd_phase_voltage': '_xxxxxx3pccdd_vrms_4',
+            'sensor.wibeee_3pccdd_l1_phase_voltage': '_xxxxxx3pccdd_vrms_1',
         }
 
     def assert_entity_names():
@@ -71,8 +94,6 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
         values = {id: entities[id].state for id in entities.keys()}
         assert values == expected
 
-    entries = [MockConfigEntry(domain='wibeee', version=3, data={'host': info.ipAddr, 'mac_address': info.macAddr, 'wibeee_id': info.id})
-               for info, sensors in devices_data]
     device_infos = {info.ipAddr: info for info, sensors in devices_data}
     device_values = {i.ipAddr: _build_values(i, sensors) for i, sensors in devices_data}
 
@@ -85,6 +106,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
     await hass.async_block_till_done()
 
     assert_via_devices()
+    assert_unique_ids()
     assert_entity_names()
     assert_entity_values({
         'sensor.wibeee_1paabb_firmware': '10.9.8',
@@ -114,6 +136,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
     assert mock_async_fetch_values.call_count == 2
 
     assert_via_devices()
+    assert_unique_ids()
     assert_entity_names()
     assert_entity_values({
         'sensor.wibeee_3pccdd_mac_address': 'unknown',
