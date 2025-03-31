@@ -106,12 +106,10 @@ class SensorType(NamedTuple):
     """
     Wibeee supported sensor definition.
     """
-    poll_var_prefix: Optional[str]
+    poll_var_prefix: str
     "prefix used for elements in `values.xml` output (e.g.: 'vrms')"
     push_var_prefix: Optional[str]
     "prefix used in Wibeee Nest push requests such as receiverLeap (e.g.: 'v')"
-    unique_name: str
-    "used to build the sensor unique_id (e.g.: 'Vrms')"
     friendly_name: str
     "used to build the sensor name and entity id (e.g.: 'Phase Voltage')"
     unit: Optional[str] = None
@@ -122,6 +120,12 @@ class SensorType(NamedTuple):
     "optional entity category"
     slots: tuple[Slot] = (Slot.Total, Slot.L1, Slot.L2, Slot.L3)
     "slots where this sensor may be found"
+    unique_name_override: Optional[str] = None
+    "optional override used to build the sensor unique_id (e.g.: 'Vrms')"
+
+    @property
+    def unique_name(self: 'SensorType') -> str:
+        return self.unique_name_override if self.unique_name_override else self.friendly_name.replace(' ', '_')
 
     @property
     def state_class(self: 'SensorType') -> SensorStateClass | None:
@@ -136,24 +140,23 @@ class SensorType(NamedTuple):
 
 KNOWN_SENSORS = (
     # Energy sensors:
-    SensorType('vrms', 'v', 'Vrms', 'Phase Voltage', UnitOfElectricPotential.VOLT, SensorDeviceClass.VOLTAGE),
-    SensorType('irms', 'i', 'Irms', 'Current', UnitOfElectricCurrent.AMPERE, SensorDeviceClass.CURRENT),
-    SensorType('freq', 'q', 'Frequency', 'Frequency', UnitOfFrequency.HERTZ, SensorDeviceClass.FREQUENCY),
-    SensorType('pac', 'a', 'Active_Power', 'Active Power', UnitOfPower.WATT, SensorDeviceClass.POWER),
-    SensorType('preac', 'r', 'Reactive_Power', 'Reactive Power', UnitOfReactivePower.VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
-    SensorType('pap', 'p', 'Apparent_Power', 'Apparent Power', UnitOfApparentPower.VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
-    SensorType('fpot', 'f', 'Power_Factor', 'Power Factor', None, SensorDeviceClass.POWER_FACTOR),
-    SensorType('eac', 'e', 'Active_Energy', 'Active Energy', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eaccons', None, 'Active_Energy_Consumed', 'Active Energy Consumed', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eacprod', None, 'Active_Energy_Produced', 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('ereact', 'o', 'Inductive_Reactive_Energy', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
-    SensorType('ereactc', None, 'Capacitive_Reactive_Energy', 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
+    SensorType('vrms', 'v', 'Phase Voltage', UnitOfElectricPotential.VOLT, SensorDeviceClass.VOLTAGE, unique_name_override='Vrms'),
+    SensorType('irms', 'i', 'Current', UnitOfElectricCurrent.AMPERE, SensorDeviceClass.CURRENT, unique_name_override='Irms'),
+    SensorType('freq', 'q', 'Frequency', UnitOfFrequency.HERTZ, SensorDeviceClass.FREQUENCY),
+    SensorType('pac', 'a', 'Active Power', UnitOfPower.WATT, SensorDeviceClass.POWER),
+    SensorType('preac', 'r', 'Reactive Power', UnitOfReactivePower.VOLT_AMPERE_REACTIVE, SensorDeviceClass.REACTIVE_POWER),
+    SensorType('pap', 'p', 'Apparent Power', UnitOfApparentPower.VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
+    SensorType('fpot', 'f', 'Power Factor', None, SensorDeviceClass.POWER_FACTOR),
+    SensorType('eac', 'e', 'Active Energy', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eaccons', None, 'Active Energy Consumed', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('eacprod', None, 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
+    SensorType('ereact', 'o', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
+    SensorType('ereactc', None, 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
     # Diagnostic sensors:
-    SensorType('macAddr', 'mac', 'MAC_Address', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
-    SensorType('ipAddr', 'ip', 'IP_Address', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
-    SensorType('softVersion', 'soft', 'Firmware', 'Firmware', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
-    SensorType('phasesSequence', 'ps', 'Phases_Sequence', 'Phases Sequence', entity_category=EntityCategory.DIAGNOSTIC,
-               slots=(Slot.Device,)),
+    SensorType('macAddr', 'mac', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
+    SensorType('ipAddr', 'ip', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
+    SensorType('softVersion', 'soft', 'Firmware', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
+    SensorType('phasesSequence', 'ps', 'Phases Sequence', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
 )
 
 KNOWN_MODELS = {
