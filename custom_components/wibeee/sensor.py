@@ -53,7 +53,6 @@ from homeassistant.util import dt
 from .api import WibeeeAPI, DeviceInfo, WibeeeID
 from .const import (
     DOMAIN,
-    DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
     CONF_MAC_ADDRESS,
     CONF_NEST_UPSTREAM,
@@ -75,7 +74,7 @@ ENERGY_CLASSES = [SensorDeviceClass.ENERGY, ENERGY_VOLT_AMPERE_REACTIVE_HOUR]
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
-    vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
+    vol.Optional(CONF_SCAN_INTERVAL, default=timedelta(seconds=0)): cv.time_period,
     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.time_period,
     vol.Optional(CONF_UNIQUE_ID, default=True): cv.boolean
 })
@@ -239,14 +238,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     host = entry.data[CONF_HOST]
     mac_addr = entry.data[CONF_MAC_ADDRESS]
     wibeee_id = entry.data[CONF_WIBEEE_ID]
-    scan_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds()))
+    scan_interval = timedelta(seconds=0)
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
 
     # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
     # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
     await get_nest_proxy(hass)
 
-    api = WibeeeAPI(session, host, min(timeout, scan_interval))
+    api = WibeeeAPI(session, host, timeout)
 
     async def create_fetched_entities() -> list['WibeeeSensor']:
         """Discover existing sensors using Wibeee APIs."""

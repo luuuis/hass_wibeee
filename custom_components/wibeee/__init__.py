@@ -9,13 +9,12 @@ import re
 
 import homeassistant.helpers.entity_registry as er
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_SCAN_INTERVAL
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .api import WibeeeAPI
 from .config_flow import validate_input
-from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, \
-    DEFAULT_SCAN_INTERVAL, NEST_NULL_UPSTREAM
+from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, NEST_NULL_UPSTREAM
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,19 +71,6 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     """Migrate old entry."""
     _LOGGER.debug("Migrating from version %s", config_entry.version)
 
-    # Migrate from "Use Nest Proxy" checkbox to "Nest Cloud Service" select list
-    if config_entry.version < 2:
-        v1_conf_nest_proxy_enable = 'nest_proxy_enable'  # v1 config option that is no longer used.
-
-        options = config_entry.options
-        use_nest_proxy = options.get(v1_conf_nest_proxy_enable, False)
-        nest_upstream = NEST_DEFAULT_UPSTREAM if use_nest_proxy else 'proxy_disabled'
-
-        new_options = {k: v for k, v in options.items() if k != v1_conf_nest_proxy_enable} | {CONF_NEST_UPSTREAM: nest_upstream}
-
-        hass.config_entries.async_update_entry(config_entry, version=2, options=new_options)
-        _LOGGER.info("Migration to version %s successful, defaulting to: %s", config_entry.version, nest_upstream)
-
     # Store the MAC address and ID in the ConfigEntry, saving us from gymnastics on each sensor restore later on
     if config_entry.version < 3:
         saved_data = config_entry.data
@@ -105,20 +91,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             _LOGGER.info("Unable to migrate offline based on %d entries: %s", len(entries), unique_id_names)
             _, _, new_data = await validate_input(hass, dict(saved_data))
 
-        upstream = config_entry.options[CONF_NEST_UPSTREAM]
-        new_options = dict(config_entry.options) | {
-            # in v4 we will no longer poll. disable polling on each entry individually for now.
-            CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL.total_seconds(),
-            CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM if upstream == 'proxy_disabled' else upstream
-        }
+        hass.config_entries.async_update_entry(config_entry, version=3, data=new_data)
+        _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'data': new_data})
 
-        hass.config_entries.async_update_entry(config_entry, version=3, data=new_data, options=new_options)
-        _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'data': new_data, 'options': new_options})
-
+    # remove 'scan_interval', remove 'proxy_disabled' option
     if config_entry.version < 4:
-        upstream = config_entry.options[CONF_NEST_UPSTREAM]
-        new_options = dict(config_entry.options) | {
-            # remove 'proxy_disabled' as an option altogether
+        upstream = config_entry.options.get(CONF_NEST_UPSTREAM, NEST_NULL_UPSTREAM)
+        new_options = {k: v for k, v in config_entry.options.items() if k != 'scan_interval'} | {
             CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM if upstream == 'proxy_disabled' else upstream
         }
 

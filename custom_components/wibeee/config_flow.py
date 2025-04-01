@@ -6,7 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries, exceptions
-from homeassistant.const import (CONF_HOST, CONF_SCAN_INTERVAL)
+from homeassistant.const import (CONF_HOST)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -16,7 +16,6 @@ from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorM
 from .api import WibeeeAPI
 from .const import (
     DOMAIN,
-    DEFAULT_SCAN_INTERVAL,
     CONF_MAC_ADDRESS,
     CONF_NEST_UPSTREAM,
     CONF_WIBEEE_ID,
@@ -108,10 +107,6 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=self.options)
 
         data_schema = vol.Schema({
-            vol.Optional(
-                CONF_SCAN_INTERVAL,
-                default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds())
-            ): int,
             vol.Required(
                 CONF_NEST_UPSTREAM,
                 default=self.config_entry.options.get(CONF_NEST_UPSTREAM, NEST_NULL_UPSTREAM)
