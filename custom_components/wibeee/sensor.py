@@ -341,7 +341,7 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
                          severity=ir.IssueSeverity.WARNING,
                          translation_key="wibeee_local_push_not_received",
                          translation_placeholders={"device_name": device_name, "last_updated": last_updated.ctime()},
-                         learn_more_url='https://github.com/luuuis/hass_wibeee/?tab=readme-ov-file#-configuring-local-push-optional-advanced')
+                         learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
         else:
             delete_issue(hass, DOMAIN, issue_id)
 
