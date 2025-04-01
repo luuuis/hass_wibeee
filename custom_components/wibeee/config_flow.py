@@ -50,7 +50,7 @@ async def validate_input(hass: HomeAssistant, user_input: dict) -> [str, str, di
 
 class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Wibeee config flow."""
-    VERSION = 3
+    VERSION = 4
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""

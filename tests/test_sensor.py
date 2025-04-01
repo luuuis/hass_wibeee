@@ -1,6 +1,6 @@
 import logging
 from typing import Dict
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import homeassistant.helpers.entity_registry as er
 from homeassistant.core import HomeAssistant
@@ -35,7 +35,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
         ],
     ]
 
-    entries = [MockConfigEntry(domain='wibeee', version=3, data={'host': info.ipAddr, 'mac_address': info.macAddr, 'wibeee_id': info.id})
+    entries = [MockConfigEntry(domain='wibeee', version=4, data={'host': info.ipAddr, 'mac_address': info.macAddr, 'wibeee_id': info.id})
                for info, sensors in devices_data]
 
     def assert_via_devices():

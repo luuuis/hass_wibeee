@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .api import WibeeeAPI
 from .config_flow import validate_input
-from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, \
+from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, \
     DEFAULT_SCAN_INTERVAL, NEST_NULL_UPSTREAM
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
         options = config_entry.options
         use_nest_proxy = options.get(v1_conf_nest_proxy_enable, False)
-        nest_upstream = NEST_DEFAULT_UPSTREAM if use_nest_proxy else NEST_PROXY_DISABLED
+        nest_upstream = NEST_DEFAULT_UPSTREAM if use_nest_proxy else 'proxy_disabled'
 
         new_options = {k: v for k, v in options.items() if k != v1_conf_nest_proxy_enable} | {CONF_NEST_UPSTREAM: nest_upstream}
 
@@ -109,10 +109,20 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         new_options = dict(config_entry.options) | {
             # in v4 we will no longer poll. disable polling on each entry individually for now.
             CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL.total_seconds(),
-            CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM if upstream == NEST_PROXY_DISABLED else upstream
+            CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM if upstream == 'proxy_disabled' else upstream
         }
 
         hass.config_entries.async_update_entry(config_entry, version=3, data=new_data, options=new_options)
         _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'data': new_data, 'options': new_options})
+
+    if config_entry.version < 4:
+        upstream = config_entry.options[CONF_NEST_UPSTREAM]
+        new_options = dict(config_entry.options) | {
+            # remove 'proxy_disabled' as an option altogether
+            CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM if upstream == 'proxy_disabled' else upstream
+        }
+
+        hass.config_entries.async_update_entry(config_entry, version=4, options=new_options)
+        _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'options': new_options})
 
     return True

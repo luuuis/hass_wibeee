@@ -50,15 +50,14 @@ from homeassistant.helpers.issue_registry import create_issue, delete_issue
 from homeassistant.helpers.typing import StateType
 from homeassistant.util import dt
 
-from . import CONF_MAC_ADDRESS
 from .api import WibeeeAPI, DeviceInfo, WibeeeID
 from .const import (
     DOMAIN,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TIMEOUT,
+    CONF_MAC_ADDRESS,
     CONF_NEST_UPSTREAM,
     CONF_WIBEEE_ID,
-    NEST_PROXY_DISABLED,
 )
 from .nest import get_nest_proxy
 from .util import short_mac
@@ -242,12 +241,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     wibeee_id = entry.data[CONF_WIBEEE_ID]
     scan_interval = timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds()))
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
-    use_nest_proxy = entry.options.get(CONF_NEST_UPSTREAM, NEST_PROXY_DISABLED) != NEST_PROXY_DISABLED
 
-    if use_nest_proxy:
-        # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
-        # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
-        await get_nest_proxy(hass)
+    # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
+    # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
+    await get_nest_proxy(hass)
 
     api = WibeeeAPI(session, host, min(timeout, scan_interval))
 
@@ -322,12 +319,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     remove_issue_maintainer = setup_issue_maintainer(hass, entry, sensors)
     disposers.update(issue_maintainer=remove_issue_maintainer)
 
-    if use_nest_proxy:
-        remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
-        disposers.update(push_listener=remove_push_listener)
+    remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
+    disposers.update(push_listener=remove_push_listener)
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
-                 f"use_nest_proxy={use_nest_proxy}, scan_interval={scan_interval}, timeout={timeout})")
+                 f"scan_interval={scan_interval}, timeout={timeout})")
     return True
 
 

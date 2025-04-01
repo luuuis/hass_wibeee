@@ -19,7 +19,7 @@ def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, 
 
 
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
-async def test_migrate_entry_1_to_3(mock_async_fetch_device_info, hass: HomeAssistant):
+async def test_migrate_entry_from_1(mock_async_fetch_device_info, hass: HomeAssistant):
     entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.2'}, version=1)
     info = DeviceInfo('ozymandias', 'abcdabcdabcd', '4.5.6', 'WBB', '127.0.0.2')
 
@@ -35,12 +35,12 @@ async def test_migrate_entry_1_to_3(mock_async_fetch_device_info, hass: HomeAssi
         'wibeee_id': 'ozymandias',  # Wibeee id, needed for values.xml API
     }
     assert configured_entry.options == {'scan_interval': 0.0, 'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 3
+    assert configured_entry.version == 4
 
 
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 @patch.object(er, 'async_entries_for_config_entry', autospec=True)
-async def test_migrate_entry_2_to_3(mock_async_entries_for_config_entry, mock_async_fetch_device_info, hass: HomeAssistant):
+async def test_migrate_entry_from_2(mock_async_entries_for_config_entry, mock_async_fetch_device_info, hass: HomeAssistant):
     info = DeviceInfo('Upstairs', 'abcdabcdabcd', '10.9.8', 'WBM', '127.0.0.2')
     mock_async_fetch_device_info.return_value = info
 
@@ -63,11 +63,11 @@ async def test_migrate_entry_2_to_3(mock_async_entries_for_config_entry, mock_as
         'wibeee_id': 'Upstairs',  # Wibeee id, needed for values.xml API
     }
     assert configured_entry.options == {'scan_interval': 0.0, 'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 3
+    assert configured_entry.version == 4
 
 
 @patch.object(er, 'async_entries_for_config_entry', autospec=True)
-async def test_migrate_entry_2_to_3_offline(mock_async_entries_for_config_entry, hass: HomeAssistant):
+async def test_migrate_entry_from_2_offline(mock_async_entries_for_config_entry, hass: HomeAssistant):
     entry = MockConfigEntry(domain='wibeee', data={'host': '127.0.0.2'}, options={'scan_interval': 30, 'nest_upstream': 'proxy_disabled'},
                             version=2)
     mock_async_entries_for_config_entry.side_effect = lambda _, entry_id: [] if entry_id != entry.entry_id else [
@@ -89,4 +89,26 @@ async def test_migrate_entry_2_to_3_offline(mock_async_entries_for_config_entry,
         'wibeee_id': 'Downstairs',  # Wibeee id, needed for values.xml API
     }
     assert configured_entry.options == {'scan_interval': 0.0, 'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 3
+    assert configured_entry.version == 4
+
+
+@patch.object(er, 'async_entries_for_config_entry', autospec=True)
+async def test_migrate_entry_from_3(mock_async_entries_for_config_entry, hass: HomeAssistant):
+    entry = MockConfigEntry(domain='wibeee',
+                            data={'host': '127.0.0.127', 'mac_address': 'abcdabcdabcd', 'wibeee_id': 'WIBEEE'},
+                            options={'nest_upstream': 'proxy_disabled'},
+                            version=3)
+
+    mock_async_entries_for_config_entry.side_effect = lambda _, entry_id: [] if entry_id != entry.entry_id else [
+        MagicMock(spec=er.RegistryEntry, has_entity_name=True, unique_id='_abcdabcdabcd_apparent_power_1'),
+        MagicMock(spec=er.RegistryEntry, has_entity_name=True, unique_id='_abcdabcdabcd_active_energy_1'),
+        MagicMock(spec=er.RegistryEntry, has_entity_name=True, unique_id='_abcdabcdabcd_vrms_1'),
+    ]
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert configured_entry.options == {'nest_upstream': 'proxy_null'}
+    assert configured_entry.version == 4
