@@ -130,7 +130,7 @@ class SensorType(NamedTuple):
         if self.device_class in ENERGY_CLASSES:
             return SensorStateClass.TOTAL_INCREASING
 
-        if self.unit:
+        if self.unit or self.device_class:
             return SensorStateClass.MEASUREMENT
 
         return None
