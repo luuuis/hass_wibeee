@@ -101,7 +101,7 @@ def create_application(get_device_info: Callable[[str], Optional[DeviceConfig]])
                 return web.Response(status=res.status, headers=res.headers, body=res_body)
 
             except aiohttp.ClientError as e:
-                LOGGER.error('Wibeee Cloud HTTP error during %d %s', req.method, req.path, exc_info=e)
+                LOGGER.error('Wibeee Cloud HTTP error during %s %s', req.method, req.path, exc_info=e)
                 return web.Response(status=500)  # Server Error
 
         return handler
