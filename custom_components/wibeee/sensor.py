@@ -105,7 +105,7 @@ class SensorType(NamedTuple):
     """
     poll_var_prefix: str
     "prefix used for elements in `values.xml` output (e.g.: 'vrms')"
-    push_var_prefix: Optional[str]
+    push_var_prefix: str
     "prefix used in Wibeee Nest push requests such as receiverLeap (e.g.: 'v')"
     friendly_name: str
     "used to build the sensor name and entity id (e.g.: 'Phase Voltage')"
@@ -145,10 +145,7 @@ KNOWN_SENSORS = (
     SensorType('pap', 'p', 'Apparent Power', UnitOfApparentPower.VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
     SensorType('fpot', 'f', 'Power Factor', None, SensorDeviceClass.POWER_FACTOR),
     SensorType('eac', 'e', 'Active Energy', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eaccons', None, 'Active Energy Consumed', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eacprod', None, 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereactl', 'o', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
-    SensorType('ereactc', None, 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
     # Diagnostic sensors:
     SensorType('macAddr', 'mac', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     SensorType('ipAddr', 'ip', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
