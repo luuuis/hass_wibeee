@@ -324,7 +324,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 
 def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['WibeeeSensor']) -> CALLBACK_TYPE:
-    issue_id = f'{entry.entry_id}_local_push'
+    issue_id = f'wibeee_stale_states_checker_{entry.entry_id}'
     stale_threshold = timedelta(minutes=1)
 
     async def check_for_stale_states(now: datetime):
@@ -355,7 +355,7 @@ def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['Wibeee
         else:
             async_delete_issue(hass, DOMAIN, issue_id)
 
-    return async_track_time_interval(hass, check_for_stale_states, stale_threshold * 2, name=f'Wibeee {entry.unique_id} setup_repairs')
+    return async_track_time_interval(hass, check_for_stale_states, stale_threshold * 2, name=issue_id)
 
 
 class WibeeeSensor(SensorEntity):
