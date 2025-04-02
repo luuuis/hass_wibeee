@@ -60,7 +60,7 @@ class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured(updates=user_input)
 
-                return self.async_create_entry(title=title, data=data)
+                return self.async_create_entry(title=title, data=data, options={CONF_NEST_UPSTREAM: NEST_NULL_UPSTREAM})
 
             except AbortFlow:
                 # allow this to escape the catch-all below
