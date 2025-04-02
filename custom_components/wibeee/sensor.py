@@ -48,6 +48,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.issue_registry import async_create_issue, async_delete_issue
 from homeassistant.helpers.typing import StateType
+from homeassistant.util.dt import as_local
 
 from .api import WibeeeAPI, DeviceInfo, WibeeeID
 from .const import (
@@ -349,7 +350,7 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
                                                else 'local_push_not_received_partial',
                                translation_placeholders=dict(sensor_count=len(stale_states),
                                                              device_name=device_name,
-                                                             last_reported=last_reported.ctime()),
+                                                             last_reported=as_local(last_reported).ctime()),
                                learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
         else:
             async_delete_issue(hass, DOMAIN, issue_id)
