@@ -152,7 +152,7 @@ async def extract_query_params(req: web.Request) -> DecodedRequest:
 async def extract_json_body(req: web.Request) -> DecodedRequest:
     """Extracts Wibeee data from JSON request body."""
     body = await req.text() if req.can_read_body else None
-    LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
+    LOGGER.debug("Parsing JSON in %s %s", req.method, req.path)
     parsed_body = None
     parse_error = None
     try:
