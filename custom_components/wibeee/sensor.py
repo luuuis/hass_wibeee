@@ -324,9 +324,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: list['WibeeeSensor']) -> CALLBACK_TYPE:
     issue_id = f'{entry.entry_id}_local_push'
+    stale_threshold = timedelta(minutes=1)
 
     async def check_for_stale_states(now: datetime):
-        stale_cutoff_time = now - timedelta(minutes=2)
+        stale_cutoff_time = now - (stale_threshold * 1.5)
         stale_states = {sensor: state for sensor in sensors
                         if (state := hass.states.get(sensor.entity_id))
                         if state and state.last_reported < stale_cutoff_time}
@@ -353,7 +354,7 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
         else:
             async_delete_issue(hass, DOMAIN, issue_id)
 
-    return async_track_time_interval(hass, check_for_stale_states, timedelta(seconds=10), name=f'Wibeee {issue_id} issue_maintainer')
+    return async_track_time_interval(hass, check_for_stale_states, stale_threshold * 2, name=f'Wibeee {issue_id} issue_maintainer')
 
 
 class WibeeeSensor(SensorEntity):
