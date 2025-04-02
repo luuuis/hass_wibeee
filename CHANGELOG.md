@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0-beta](https://github.com/luuuis/hass_wibeee/compare/v4.0.0...v4.1.0-beta) (2025-04-02)
+
+
+### Features
+
+* mark stale sensors as unavailable if no Local Push updates received recently ([#142](https://github.com/luuuis/hass_wibeee/issues/142)) ([42f179f](https://github.com/luuuis/hass_wibeee/commit/42f179fc47ec4aae692457804271cc5f9ab3ba07))
+* remove Polling Interval and Proxy Disabled options ([#141](https://github.com/luuuis/hass_wibeee/issues/141)) ([cc044ca](https://github.com/luuuis/hass_wibeee/commit/cc044cae181d880cd0a7675546c595fe8030760f))
+* **sensors:** added diagnostic sensors on device ([#137](https://github.com/luuuis/hass_wibeee/issues/137)) ([95753de](https://github.com/luuuis/hass_wibeee/commit/95753dec676fab4ee7e86bfecaa08312320b4f85))
+* several improvements around the "WIBEEE is not receiving updates" repair ([#144](https://github.com/luuuis/hass_wibeee/issues/144)) ([15759bb](https://github.com/luuuis/hass_wibeee/commit/15759bb0532224461ebcbd3868aef39af6b62d1c))
+
+
+### Bug Fixes
+
+* **deprecation:** don't set self.config_entry on OptionsFlow ([#140](https://github.com/luuuis/hass_wibeee/issues/140)) ([8a86136](https://github.com/luuuis/hass_wibeee/commit/8a86136469cd7c5ba862c5594c2c8c7085c30ff6))
+
 ## [4.0.0](https://github.com/luuuis/hass_wibeee/compare/v3.6.9...v4.0.0) (2025-03-28)
 
 
