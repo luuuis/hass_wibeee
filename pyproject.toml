@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hass-wibeee"
-version = "4.0.0"
+version = "4.1.0-beta"
 description = "Wibeee (and Mirubee) energy monitor"
 authors = ["Luis Miranda <cheery.key9586@fastmail.com>"]
 license = "GNU General Public License v3.0"
