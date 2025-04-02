@@ -48,6 +48,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.issue_registry import async_create_issue, async_delete_issue
 from homeassistant.helpers.typing import StateType
+from homeassistant.util.dt import as_local
 
 from .api import WibeeeAPI, DeviceInfo, WibeeeID
 from .const import (
@@ -105,7 +106,7 @@ class SensorType(NamedTuple):
     """
     poll_var_prefix: str
     "prefix used for elements in `values.xml` output (e.g.: 'vrms')"
-    push_var_prefix: Optional[str]
+    push_var_prefix: str
     "prefix used in Wibeee Nest push requests such as receiverLeap (e.g.: 'v')"
     friendly_name: str
     "used to build the sensor name and entity id (e.g.: 'Phase Voltage')"
@@ -145,10 +146,7 @@ KNOWN_SENSORS = (
     SensorType('pap', 'p', 'Apparent Power', UnitOfApparentPower.VOLT_AMPERE, SensorDeviceClass.APPARENT_POWER),
     SensorType('fpot', 'f', 'Power Factor', None, SensorDeviceClass.POWER_FACTOR),
     SensorType('eac', 'e', 'Active Energy', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eaccons', None, 'Active Energy Consumed', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
-    SensorType('eacprod', None, 'Active Energy Produced', UnitOfEnergy.WATT_HOUR, SensorDeviceClass.ENERGY),
     SensorType('ereactl', 'o', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
-    SensorType('ereactc', None, 'Capacitive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
     # Diagnostic sensors:
     SensorType('macAddr', 'mac', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     SensorType('ipAddr', 'ip', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
@@ -314,7 +312,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     remove_fetch_listener = setup_local_polling(hass, api, wibeee_id, sensors, scan_interval)
     disposers.update(fetch_status=remove_fetch_listener)
 
-    remove_issue_maintainer = setup_issue_maintainer(hass, entry, sensors)
+    remove_issue_maintainer = setup_repairs(hass, entry, sensors)
     disposers.update(issue_maintainer=remove_issue_maintainer)
 
     remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
@@ -325,35 +323,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     return True
 
 
-def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: list['WibeeeSensor']) -> CALLBACK_TYPE:
-    issue_id = f'{entry.entry_id}_local_push'
+def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['WibeeeSensor']) -> CALLBACK_TYPE:
+    issue_id = f'wibeee_stale_states_checker_{entry.entry_id}'
+    stale_threshold = timedelta(minutes=1)
 
     async def check_for_stale_states(now: datetime):
-        stale_cutoff_time = now - timedelta(minutes=2)
+        stale_cutoff_time = now - (stale_threshold * 1.5)
         stale_states = {sensor: state for sensor in sensors
                         if (state := hass.states.get(sensor.entity_id))
-                        if state and state.last_updated < stale_cutoff_time}
+                        if state and state.last_reported < stale_cutoff_time}
 
+        _LOGGER.debug("check_for_stale_states found %d stale states", len(stale_states))
         if stale_states:
-            _LOGGER.debug("issue_maintainer found %d stale states", len(stale_states))
             devices = [d for d in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id) if not d.via_device_id]
             device_name = devices[0].name if devices else entry.data.get(CONF_WIBEEE_ID, "Wibeee")
 
             sensors_to_make_unavailable = [sensor for sensor in stale_states.keys() if sensor.available]
             if sensors_to_make_unavailable:
-                update_sensors(sensors_to_make_unavailable, 'issue_maintainer', lambda k: k, {})
+                update_sensors(sensors_to_make_unavailable, 'check_for_stale_states', lambda k: k, {})
 
-            last_updated = max([state.last_updated for state in stale_states.values()])
+            last_reported = max([state.last_reported for state in stale_states.values()])
             async_create_issue(hass, DOMAIN, issue_id,
-                         is_fixable=False,
-                         severity=ir.IssueSeverity.WARNING,
-                         translation_key="wibeee_local_push_not_received",
-                         translation_placeholders={"device_name": device_name, "last_updated": last_updated.ctime()},
-                         learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
+                               is_fixable=False,
+                               severity=ir.IssueSeverity.WARNING,
+                               translation_key=f'local_push_not_received_all' if len(stale_states) == len(sensors)
+                                               else 'local_push_not_received_partial',
+                               translation_placeholders=dict(sensor_count=len(stale_states),
+                                                             device_name=device_name,
+                                                             last_reported=as_local(last_reported).ctime()),
+                               learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
         else:
             async_delete_issue(hass, DOMAIN, issue_id)
 
-    return async_track_time_interval(hass, check_for_stale_states, timedelta(seconds=10), name=f'Wibeee {issue_id} issue_maintainer')
+    return async_track_time_interval(hass, check_for_stale_states, stale_threshold * 2, name=issue_id)
 
 
 class WibeeeSensor(SensorEntity):
