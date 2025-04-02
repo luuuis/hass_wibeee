@@ -342,11 +342,14 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
 
             last_updated = max([state.last_updated for state in stale_states.values()])
             async_create_issue(hass, DOMAIN, issue_id,
-                         is_fixable=False,
-                         severity=ir.IssueSeverity.WARNING,
-                         translation_key="wibeee_local_push_not_received",
-                         translation_placeholders={"device_name": device_name, "last_updated": last_updated.ctime()},
-                         learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
+                               is_fixable=False,
+                               severity=ir.IssueSeverity.WARNING,
+                               translation_key=f'local_push_not_received_all' if len(stale_states) == len(sensors)
+                                               else 'local_push_not_received_partial',
+                               translation_placeholders=dict(sensor_count=len(stale_states),
+                                                             device_name=device_name,
+                                                             last_updated=last_updated.ctime()),
+                               learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
         else:
             async_delete_issue(hass, DOMAIN, issue_id)
 
