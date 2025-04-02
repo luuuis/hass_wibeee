@@ -32,11 +32,11 @@
   "issues": {
     "local_push_not_received_all": {
       "title": "{device_name} is not receiving updates",
-      "description": "{device_name} has not received an update since {last_updated}.\n\nConfigure Local Push to get updates when sensor values change."
+      "description": "{device_name} has not received an update since {last_reported}.\n\nConfigure Local Push to get updates when sensor values change."
     },
     "local_push_not_received_partial": {
       "title": "{device_name} is not receiving updates for all sensors",
-      "description": "{device_name} has not received an update on {sensor_count} of its sensors since {last_updated}.\n\nConfigure Local Push to get updates when sensor values change."
+      "description": "{device_name} has not received an update on {sensor_count} of its sensors since {last_reported}.\n\nConfigure Local Push to get updates when sensor values change."
     }
   }
 }

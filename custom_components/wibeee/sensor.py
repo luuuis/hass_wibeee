@@ -329,7 +329,7 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
         stale_cutoff_time = now - timedelta(minutes=2)
         stale_states = {sensor: state for sensor in sensors
                         if (state := hass.states.get(sensor.entity_id))
-                        if state and state.last_updated < stale_cutoff_time}
+                        if state and state.last_reported < stale_cutoff_time}
 
         if stale_states:
             _LOGGER.debug("issue_maintainer found %d stale states", len(stale_states))
@@ -340,7 +340,7 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
             if sensors_to_make_unavailable:
                 update_sensors(sensors_to_make_unavailable, 'issue_maintainer', lambda k: k, {})
 
-            last_updated = max([state.last_updated for state in stale_states.values()])
+            last_reported = max([state.last_reported for state in stale_states.values()])
             async_create_issue(hass, DOMAIN, issue_id,
                                is_fixable=False,
                                severity=ir.IssueSeverity.WARNING,
@@ -348,7 +348,7 @@ def setup_issue_maintainer(hass: HomeAssistant, entry: ConfigEntry, sensors: lis
                                                else 'local_push_not_received_partial',
                                translation_placeholders=dict(sensor_count=len(stale_states),
                                                              device_name=device_name,
-                                                             last_updated=last_updated.ctime()),
+                                                             last_reported=last_reported.ctime()),
                                learn_more_url='https://github.com/luuuis/hass_wibeee/tree/main?tab=readme-ov-file#-configuring-local-push')
         else:
             async_delete_issue(hass, DOMAIN, issue_id)
