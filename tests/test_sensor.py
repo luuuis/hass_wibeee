@@ -3,13 +3,15 @@ from typing import Dict
 from unittest.mock import patch
 
 import homeassistant.helpers.entity_registry as er
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry, entity_registry
 from homeassistant.helpers.entity_platform import EntityPlatform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components import wibeee
 from custom_components.wibeee.api import WibeeeAPI
-from custom_components.wibeee.sensor import DeviceInfo
+from custom_components.wibeee.sensor import DeviceInfo, WibeeeSensor, KNOWN_SENSORS, SlotNum
 
 
 def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, any]:
@@ -40,8 +42,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
 
     def assert_via_devices():
         # ensure via_device is correct, HA will start to fail if not.
-        registry = device_registry.async_get(hass)
-        registry_devices = [re for e in entries for re in device_registry.async_entries_for_config_entry(registry, e.entry_id)]
+        registry_devices = [re for e in entries for re in async_devices_for_config_entry(hass, e)]
         via_devices = {re.name: re.via_device_id for re in registry_devices}
         device_ids = {re.name: re.id for re in registry_devices}
 
@@ -53,9 +54,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
         }
 
     def assert_unique_ids():
-        reg_entries = [reg_e
-                       for conf_e in entries
-                       for reg_e in entity_registry.async_entries_for_config_entry(er.async_get(hass), config_entry_id=conf_e.entry_id)]
+        reg_entries = [reg_e for conf_e in entries for reg_e in async_entities_for_config_entry(hass, conf_e)]
 
         unique_ids = {reg_e.entity_id: reg_e.unique_id for reg_e in reg_entries}
         assert unique_ids == {
@@ -171,3 +170,39 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
 
     warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
     assert len(warnings) is 0
+
+
+async def test_device_configuration_url(hass: HomeAssistant):
+    dev = DeviceInfo('ozymandias', 'abcdabcdabcd', '100.1', 'WBB', '1.2.3.4')
+    sensor_type = [s for s in KNOWN_SENSORS if s.unique_name == 'IP_Address'][0]
+    slot_num = SlotNum[sensor_type.slots[0].name]
+    sensor = [WibeeeSensor(dev.macAddr, wibeee.sensor._make_device_info(dev, slot_num, None), slot_num, sensor_type, None)][0]
+
+    entry = MockConfigEntry(domain='wibeee', data=dict(host=dev.ipAddr, mac_addr=dev.macAddr, wibeee_id=dev.id), version=4)
+    entry.add_to_hass(hass)
+    device_registry.async_get(hass).async_get_or_create(**dict(config_entry_id=entry.entry_id, **sensor.device_info))
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    on_data_pushed = await wibeee.sensor.setup_update_devices_local_push(hass, entry, [sensor])
+    await hass.async_block_till_done()
+
+    def assert_configuration_url(url: str):
+        devices = async_devices_for_config_entry(hass, entry)
+        configuration_url = devices[0].configuration_url if devices else None
+        assert configuration_url == url
+
+    assert_configuration_url('http://1.2.3.4/')
+
+    on_data_pushed({sensor.nest_push_param: '4.3.2.1'})
+    on_data_pushed(dict(foo='bar'))
+    await hass.async_block_till_done()
+
+    assert_configuration_url('http://4.3.2.1/')
+
+
+def async_devices_for_config_entry(hass: HomeAssistant, entry: ConfigEntry):
+    return device_registry.async_entries_for_config_entry(device_registry.async_get(hass), config_entry_id=entry.entry_id)
+
+
+def async_entities_for_config_entry(hass: HomeAssistant, entry: ConfigEntry):
+    return entity_registry.async_entries_for_config_entry(er.async_get(hass), config_entry_id=entry.entry_id)

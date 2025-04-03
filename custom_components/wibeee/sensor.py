@@ -7,9 +7,10 @@ Documentation: https://github.com/luuuis/hass_wibeee/
 """
 import logging
 import re
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Callable, Any
 
 import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
@@ -181,7 +182,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     ))
 
 
-def update_sensors(sensors, update_source, lookup_key, data):
+def update_sensors(sensors: Iterable['WibeeeSensor'], update_source: str,
+                   lookup_key: Callable[['WibeeeSensor'], str], data: dict[str, Any]):
     if _LOGGER.isEnabledFor(logging.DEBUG):
         sensors_with_updates = [s for s in sensors if lookup_key(s) in data]
         _LOGGER.debug('Received %d sensor values from %s: %s', len(sensors_with_updates), update_source, data)
@@ -214,10 +216,12 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, wibeee_id: WibeeeID
 
 async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_address: str, sensors: list['WibeeeSensor']):
     nest_proxy = await get_nest_proxy(hass)
+    update_devices = await setup_update_devices_local_push(hass, entry, sensors)
 
     def on_pushed_data(pushed_data: dict) -> None:
-        pushed_sensors = [s for s in sensors if s.nest_push_param in pushed_data]
-        update_sensors(pushed_sensors, 'Nest push', lambda s: s.nest_push_param, pushed_data)
+        pushed_sensors = {s.unique_id: s for s in sensors if s.nest_push_param in pushed_data}
+        update_sensors(pushed_sensors.values(), 'Nest push', lambda s: s.nest_push_param, pushed_data)
+        update_devices(pushed_data)
 
     def unregister_listener():
         nest_proxy.unregister_device(mac_address)
@@ -225,6 +229,28 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_ad
     upstream = entry.options.get(CONF_NEST_UPSTREAM)
     nest_proxy.register_device(mac_address, on_pushed_data, upstream)
     return unregister_listener
+
+
+async def setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEntry,
+                                          sensors: Iterable['WibeeeSensor']) -> Callable[[dict[str, Any]], type(None)]:
+    device_registry = dr.async_get(hass)
+    update_devices = {d.id: str(d.identifiers) for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id) if
+                      d.configuration_url}
+    ip_push_param, = [s.nest_push_param for s in sensors if s.sensor_type.unique_name == 'IP_Address'] or [None]
+
+    _LOGGER.debug('Registered devices to update from push param "%s": %s', ip_push_param, update_devices)
+
+    async def _update_ip_address(ip_addr: str):
+        for d_id, name in update_devices.items():
+            configuration_url = _make_configuration_url(ip_addr)
+            device_registry.async_update_device(d_id, configuration_url=configuration_url)
+            _LOGGER.debug(f'Updated {name} (device_id={d_id}) with configuration_url={configuration_url}')
+
+    def _update_devices(data: dict[str, Any]):
+        if ip_push_param and ip_push_param in data:
+            entry.async_create_task(hass, _update_ip_address(data[ip_push_param]), f'wibeee_update_device_{entry.entry_id}')
+
+    return _update_devices
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> bool:
@@ -340,7 +366,7 @@ def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['Wibeee
 
             sensors_to_make_unavailable = [sensor for sensor in stale_states.keys() if sensor.available]
             if sensors_to_make_unavailable:
-                update_sensors(sensors_to_make_unavailable, 'check_for_stale_states', lambda k: k, {})
+                update_sensors(sensors_to_make_unavailable, 'check_for_stale_states', lambda s: '', {})
 
             last_reported = max([state.last_reported for state in stale_states.values()])
             async_create_issue(hass, DOMAIN, issue_id,
@@ -377,6 +403,7 @@ class WibeeeSensor(SensorEntity):
         self.slot_num = slot_num
         self.status_xml_param = f"{sensor_type.poll_var_prefix}{Slot[slot_num.name].value}"
         self.nest_push_param = f"{sensor_type.push_var_prefix}{Slot[slot_num.name].value}"
+        self.sensor_type = sensor_type
 
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:
@@ -405,9 +432,13 @@ def _make_device_info(device: DeviceInfo, slot_num: SlotNum, via_device: DeviceI
         name=device_name,
         model=device_model if not is_clamp else f'{device_model} Clamp',
         manufacturer='Smilics',
-        configuration_url=f"http://{device.ipAddr}/" if not is_clamp else None,
+        configuration_url=_make_configuration_url(device.ipAddr) if not is_clamp else None,
         sw_version=f"{device.softVersion}" if not is_clamp else None,
     )
+
+
+def _make_configuration_url(ip_addr: str) -> str:
+    return f"http://{ip_addr}/"
 
 
 def _rehydrate_device_info(device_registry: DeviceRegistry, d: DeviceEntry) -> HassDeviceInfo:
