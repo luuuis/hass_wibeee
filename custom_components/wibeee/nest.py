@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Callable, Dict, NamedTuple, Awaitable, Optional
+from typing import Callable, Dict, NamedTuple, Awaitable, Optional, Any
 from urllib.parse import parse_qsl
 
 from aiohttp.web_request import Request
@@ -32,7 +32,7 @@ class DeviceConfig(NamedTuple):
 
 class DecodedRequest(NamedTuple):
     macAddr: str | None = None
-    push_data: Dict = {}
+    push_data: dict[str, Any] = {}
     body: str | None = None
 
 
