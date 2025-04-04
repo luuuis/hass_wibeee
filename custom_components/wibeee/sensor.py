@@ -10,7 +10,8 @@ import re
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from enum import Enum, unique
-from typing import NamedTuple, Optional, Callable, Any
+from types import MappingProxyType
+from typing import NamedTuple, Optional, Callable, Any, TypeVar, Mapping
 
 import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
@@ -64,7 +65,7 @@ from .util import short_mac
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = 'Wibeee Energy Consumption Sensor'
+T = TypeVar('T')
 
 # Not known in HA yet so we do as the Fronius integration.
 #
@@ -81,24 +82,24 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
+class SlotData(NamedTuple):
+    poll_var_suffix: str
+    """Slot alphanumeric suffix for use in APIs."""
+    push_var_suffix: str
+    """Slot numeric suffix for use in push vars."""
+    unique_name_suffix: str
+    """Slot numeric suffix for use internally in unique ids."""
+    is_clamp: bool
+    """Whether the slot corresponds to a clamp."""
+
+
 @unique
 class Slot(Enum):
-    """Slot alphanumeric suffix for use in APIs: 1/2/3/t. See SlotNum."""
-    L1 = '1'
-    L2 = '2'
-    L3 = '3'
-    Total = 't'
-    Device = ''
-
-
-@unique
-class SlotNum(Enum):
-    """Slot numeric suffix for use internally: 1/2/3/4. See Slot."""
-    L1 = '1'
-    L2 = '2'
-    L3 = '3'
-    Total = '4'
-    Device = '5'
+    L1 = SlotData('1', '1', '1', is_clamp=True)
+    L2 = SlotData('2', '2', '2', is_clamp=True)
+    L3 = SlotData('3', '3', '3', is_clamp=True)
+    Total = SlotData('t', '4', '4', is_clamp=False)
+    Device = SlotData('', '', '5', is_clamp=False)
 
 
 class SensorType(NamedTuple):
@@ -155,7 +156,7 @@ KNOWN_SENSORS = (
     SensorType('phasesSequence', 'ps', 'Phases Sequence', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
 )
 
-KNOWN_MODELS = {
+KNOWN_MODELS: Mapping[str, str] = MappingProxyType({
     'WBM': 'Wibeee 1Ph',
     'WBT': 'Wibeee 3Ph',
     'WTD': 'Wibeee 3Ph RN',
@@ -167,7 +168,7 @@ KNOWN_MODELS = {
     'W3P': 'Wibeee 3Ph 3W',
     'WGD': 'Wibeee GND',
     'WBP': 'Wibeee PLUG',
-}
+})
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -235,7 +236,7 @@ async def _setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEnt
     device_registry = dr.async_get(hass)
     update_devices = {d.id: str(d.identifiers) for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id) if
                       d.configuration_url}
-    ip_push_param = f"{IP_SENSOR_TYPE.push_var_prefix}{Slot.Device.value}"
+    ip_push_param = f"{IP_SENSOR_TYPE.push_var_prefix}{Slot.Device.value.push_var_suffix}"
 
     _LOGGER.debug('Registered devices to update from push param "%s": %s', ip_push_param, update_devices)
 
@@ -274,18 +275,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         device = await api.async_fetch_device_info(retries=5)
         fetched_values = await api.async_fetch_values(device.id, retries=10)
 
-        known_poll_vars = {f"{stype.poll_var_prefix}{slot.value}": (stype, SlotNum[slot.name])
-                           for stype in KNOWN_SENSORS if stype.poll_var_prefix and stype.push_var_prefix
-                           for slot in stype.slots}
-
-        fetched_slot_nums = {slot_num for v in fetched_values if v in known_poll_vars for _, slot_num in [known_poll_vars[v]]}
-        devices = {slot_num: _make_device_info(device, slot_num, via_device=device if _is_clamp(slot_num) else None) for slot_num in
-                   fetched_slot_nums}
+        known_poll_var_slots = _known_sensor_slots(lambda sensor_type, slot: f"{sensor_type.poll_var_prefix}{slot.value.poll_var_suffix}")
+        fetched_slots = {slot for v in fetched_values if v in known_poll_var_slots for _, slot in [known_poll_var_slots[v]]}
+        devices = {slot: _make_device_info(device, slot, via_device=device if slot.value.is_clamp else None) for slot in fetched_slots}
 
         return [
-            WibeeeSensor(mac_addr, devices[slot_num], slot_num, sensor_type, fetched_values.get(poll_var))
-            for poll_var in fetched_values if poll_var in known_poll_vars
-            for sensor_type, slot_num in [known_poll_vars[poll_var]]
+            WibeeeSensor(mac_addr, device, slot, sensor_type, fetched_values.get(poll_var))
+            for poll_var in fetched_values if poll_var in known_poll_var_slots
+            for sensor_type, slot in [known_poll_var_slots[poll_var]]
+            if (device := devices[slot])
         ]
 
     def rehydrate_saved_entities() -> list['WibeeeSensor']:
@@ -301,34 +299,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             for device_id in ids
         }
 
-        known_unique_name_slots = {f'{st.unique_name.lower()}_{SlotNum[slot.name].value}': st
-                                   for st in KNOWN_SENSORS for slot in st.slots}
+        known_unique_name_slots = _known_sensor_slots(lambda st, slot: f'{st.unique_name.lower()}_{slot.value.unique_name_suffix}')
 
         reg_sensors: list[WibeeeSensor] = [
-            WibeeeSensor(device_mac_addr, device, slot_num, sensor_type, initial_value=None)
+            WibeeeSensor(device_mac_addr, device, slot, sensor_type, initial_value=None)
             for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id)
             if entity_entry.domain == Platform.SENSOR
 
             # sensor.unique_id = f"_{device_mac_addr}_{sensor_type.unique_name.lower()}_{sensor_phase}"
             if entity_entry.unique_id.count('_') >= 3
             for device_mac_addr, unique_name, slot_num_value in [re.search(r'_([^_]+)_(\w+)_(\d)', entity_entry.unique_id).groups()]
-            if (slot_num := SlotNum(slot_num_value))
             if (unique_name_slot := f'{unique_name}_{slot_num_value}')
 
             if unique_name_slot in known_unique_name_slots
-            if (sensor_type := known_unique_name_slots[unique_name_slot])
+            for sensor_type, slot in [known_unique_name_slots[unique_name_slot]]
 
-            if (device_id := f'{mac_addr}_L{slot_num.value}' if _is_clamp(slot_num) else mac_addr)
+            if (device_id := f'{mac_addr}_L{slot.value.unique_name_suffix}' if slot.value.is_clamp else mac_addr)
             if device_id in reg_devices
             if (device := reg_devices[device_id])
         ]
 
         return reg_sensors
 
-    entities = rehydrate_saved_entities() or await create_fetched_entities()
-    sensors = sorted(entities, key=lambda s: s.slot_num.value, reverse=True)  # ensure Diag/Top sensors are added first
+    sensors = rehydrate_saved_entities() or await create_fetched_entities()
 
-    async_add_entities(sensors, True)
+    # Diag/Top sensors need to be added first because they are referenced by the other sensors.
+    async_add_entities(sorted(sensors, key=lambda s: s.slot.value.unique_name_suffix, reverse=True), True)
     for sensor in sensors:
         _LOGGER.debug("Added '%s' (unique_id=%s)", sensor, sensor.unique_id)
 
@@ -386,7 +382,7 @@ def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['Wibeee
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot_num: SlotNum, sensor_type: SensorType, initial_value: StateType):
+    def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot: Slot, sensor_type: SensorType, initial_value: StateType):
         """Initialize the sensor."""
         self._attr_native_unit_of_measurement = sensor_type.unit
         self._attr_native_value = initial_value
@@ -394,14 +390,14 @@ class WibeeeSensor(SensorEntity):
         self._attr_state_class = sensor_type.state_class
         self._attr_device_class = sensor_type.device_class
         self._attr_entity_category = sensor_type.entity_category
-        self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{slot_num.value}"
+        self._attr_unique_id = f"_{mac_addr}_{sensor_type.unique_name.lower()}_{slot.value.unique_name_suffix}"
         self._attr_name = f"{sensor_type.friendly_name}"
         self._attr_has_entity_name = True
         self._attr_should_poll = False
         self._attr_device_info = device_info
-        self.slot_num = slot_num
-        self.status_xml_param = f"{sensor_type.poll_var_prefix}{Slot[slot_num.name].value}"
-        self.nest_push_param = f"{sensor_type.push_var_prefix}{Slot[slot_num.name].value}"
+        self.slot = slot
+        self.status_xml_param = f"{sensor_type.poll_var_prefix}{slot.value.poll_var_suffix}"
+        self.nest_push_param = f"{sensor_type.push_var_prefix}{slot.value.push_var_suffix}"
         self.sensor_type = sensor_type
 
     @callback
@@ -414,17 +410,17 @@ class WibeeeSensor(SensorEntity):
             _LOGGER.debug("Updating from %s: %s", update_source, self)
 
 
-def _make_device_info(device: DeviceInfo, slot_num: SlotNum, via_device: DeviceInfo | None) -> HassDeviceInfo:
+def _make_device_info(device: DeviceInfo, slot: Slot, via_device: DeviceInfo | None) -> HassDeviceInfo:
     mac_addr = device.macAddr
-    is_clamp = _is_clamp(slot_num)
+    is_clamp = slot.value.is_clamp
 
     unique_name = f'{device.id} {short_mac(device.macAddr)}'
-    device_name = unique_name if not is_clamp else f'{unique_name} L{slot_num.value}'
+    device_name = unique_name if not is_clamp else f'{unique_name} L{slot.value.poll_var_suffix}'
     device_model = KNOWN_MODELS.get(device.model, 'Wibeee Energy Meter')
 
     return HassDeviceInfo(
         # identifiers and links
-        identifiers={(DOMAIN, f'{mac_addr}_L{slot_num.value}' if is_clamp else mac_addr)},
+        identifiers={(DOMAIN, f'{mac_addr}_L{slot.value.unique_name_suffix}' if is_clamp else mac_addr)},
         via_device=(DOMAIN, f'{via_device.macAddr}') if via_device else None,
 
         # and now for the humans :)
@@ -451,6 +447,9 @@ def _rehydrate_device_info(device_registry: DeviceRegistry, d: DeviceEntry) -> H
                           sw_version=d.sw_version)
 
 
-def _is_clamp(slot_or_slot_num: Slot | SlotNum) -> bool:
-    """Returns whether a slot (1/2/3/t) or slot_num (1/2/3/4) is a clamp."""
-    return slot_or_slot_num and slot_or_slot_num not in [SlotNum.Total, Slot.Total, SlotNum.Device, Slot.Device]
+def _known_sensor_slots(make_key: Callable[[SensorType, Slot], T]) -> Mapping[T, tuple[SensorType, Slot]]:
+    """Indexes all known (sensor type, slot) combinations by the provided function."""
+    return MappingProxyType({make_key(sensor_type, slot): (sensor_type, slot)
+                             for sensor_type in KNOWN_SENSORS
+                             if sensor_type.poll_var_prefix and sensor_type.push_var_prefix
+                             for slot in sensor_type.slots})
