@@ -277,7 +277,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
         known_poll_var_slots = _known_sensor_slots(lambda sensor_type, slot: f"{sensor_type.poll_var_prefix}{slot.value.poll_var_suffix}")
         fetched_slots = {slot for v in fetched_values if v in known_poll_var_slots for _, slot in [known_poll_var_slots[v]]}
-        devices = {slot: _make_device_info(device, slot, via_device=device if slot.value.is_clamp else None) for slot in fetched_slots}
+        non_clamp_slots = {s for s in fetched_slots if not s.value.is_clamp}
+
+        devices = {slot: _make_device_info(device, slot, via_device=device if non_clamp_slots and slot.value.is_clamp else None)
+                   for slot in fetched_slots}
 
         return [
             WibeeeSensor(mac_addr, device, slot, sensor_type, fetched_values.get(poll_var))
@@ -322,9 +325,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         return reg_sensors
 
     sensors = rehydrate_saved_entities() or await create_fetched_entities()
-
-    # Diag/Top sensors need to be added first because they are referenced by the other sensors.
-    async_add_entities(sorted(sensors, key=lambda s: s.slot.value.unique_name_suffix, reverse=True), True)
+    async_add_entities(sensors, True)
     for sensor in sensors:
         _LOGGER.debug("Added '%s' (unique_id=%s)", sensor, sensor.unique_id)
 

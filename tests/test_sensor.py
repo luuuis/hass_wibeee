@@ -11,7 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components import wibeee
 from custom_components.wibeee.api import WibeeeAPI
-from custom_components.wibeee.sensor import DeviceInfo
+from custom_components.wibeee.sensor import DeviceInfo, Slot
 
 
 def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, any]:
@@ -153,6 +153,29 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+async def test_via_device_link(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant, caplog):
+    from custom_components.wibeee.sensor import KNOWN_SENSORS
+
+    caplog.set_level(logging.WARNING)
+
+    # Device has only L1, no top-level Device is created. tests for issue #106.
+    info = DeviceInfo('Wibeee 1Ph', '001100110011', '10.9.8', 'WBM', '1.2.3.4')
+    values = {f'{s.poll_var_prefix}{Slot.L1.value.poll_var_suffix}': '123' for s in KNOWN_SENSORS if s}
+
+    mock_async_fetch_device_info.return_value = info
+    mock_async_fetch_values.return_value = values
+
+    entry = MockConfigEntry(domain='wibeee', data={'host': '1.2.3.4'})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
+    assert len(warnings) is 0
+
+
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant, caplog):
     from custom_components.wibeee.sensor import KNOWN_SENSORS
 
@@ -160,7 +183,7 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
 
     info = DeviceInfo('Wibeee 1Ph', '001100110011', '10.9.8', 'WBM', '1.2.3.4')
     mock_async_fetch_device_info.return_value = info
-    values = _build_values(info, {f'{s.poll_var_prefix}{s.slots[0].value}': '123' for s in KNOWN_SENSORS})
+    values = {f'{s.poll_var_prefix}{slot.value.poll_var_suffix}': '123' for s in KNOWN_SENSORS for slot in s.slots}
     mock_async_fetch_values.return_value = values
 
     entry = MockConfigEntry(domain='wibeee', data={'host': '1.2.3.4'})
