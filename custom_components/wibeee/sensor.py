@@ -150,7 +150,7 @@ KNOWN_SENSORS = (
     SensorType('ereactl', 'o', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
     # Diagnostic sensors:
     SensorType('macAddr', 'mac', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
-    SensorType('ipAddr', 'ip', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
+    IP_SENSOR_TYPE := SensorType('ipAddr', 'ip', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     SensorType('softVersion', 'soft', 'Firmware', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     SensorType('phasesSequence', 'ps', 'Phases Sequence', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
 )
@@ -216,7 +216,7 @@ def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, wibeee_id: WibeeeID
 
 async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_address: str, sensors: list['WibeeeSensor']):
     nest_proxy = await get_nest_proxy(hass)
-    update_devices = await setup_update_devices_local_push(hass, entry, sensors)
+    update_devices = await _setup_update_devices_local_push(hass, entry)
 
     def on_pushed_data(pushed_data: dict) -> None:
         pushed_sensors = {s.unique_id: s for s in sensors if s.nest_push_param in pushed_data}
@@ -231,12 +231,11 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_ad
     return unregister_listener
 
 
-async def setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEntry,
-                                          sensors: Iterable['WibeeeSensor']) -> Callable[[dict[str, Any]], type(None)]:
+async def _setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEntry) -> Callable[[dict[str, Any]], type(None)]:
     device_registry = dr.async_get(hass)
     update_devices = {d.id: str(d.identifiers) for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id) if
                       d.configuration_url}
-    ip_push_param, = [s.nest_push_param for s in sensors if s.sensor_type.unique_name == 'IP_Address'] or [None]
+    ip_push_param = f"{IP_SENSOR_TYPE.push_var_prefix}{Slot.Device.value}"
 
     _LOGGER.debug('Registered devices to update from push param "%s": %s', ip_push_param, update_devices)
 

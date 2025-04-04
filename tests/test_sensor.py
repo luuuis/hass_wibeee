@@ -11,7 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components import wibeee
 from custom_components.wibeee.api import WibeeeAPI
-from custom_components.wibeee.sensor import DeviceInfo, WibeeeSensor, KNOWN_SENSORS, SlotNum
+from custom_components.wibeee.sensor import DeviceInfo
 
 
 def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, any]:
@@ -172,18 +172,18 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
     assert len(warnings) is 0
 
 
-async def test_device_configuration_url(hass: HomeAssistant):
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+async def test_device_configuration_url(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
     dev = DeviceInfo('ozymandias', 'abcdabcdabcd', '100.1', 'WBB', '1.2.3.4')
-    sensor_type = [s for s in KNOWN_SENSORS if s.unique_name == 'IP_Address'][0]
-    slot_num = SlotNum[sensor_type.slots[0].name]
-    sensor = [WibeeeSensor(dev.macAddr, wibeee.sensor._make_device_info(dev, slot_num, None), slot_num, sensor_type, None)][0]
+    mock_async_fetch_device_info.return_value = dev
+    mock_async_fetch_values.return_value = _build_values(dev, {})
 
-    entry = MockConfigEntry(domain='wibeee', data=dict(host=dev.ipAddr, mac_addr=dev.macAddr, wibeee_id=dev.id), version=4)
+    entry = MockConfigEntry(domain='wibeee', data=dict(host=dev.ipAddr, mac_address=dev.macAddr, wibeee_id=dev.id), version=4)
     entry.add_to_hass(hass)
-    device_registry.async_get(hass).async_get_or_create(**dict(config_entry_id=entry.entry_id, **sensor.device_info))
 
     await hass.config_entries.async_setup(entry.entry_id)
-    on_data_pushed = await wibeee.sensor.setup_update_devices_local_push(hass, entry, [sensor])
+    on_data_pushed = await wibeee.sensor._setup_update_devices_local_push(hass, entry)
     await hass.async_block_till_done()
 
     def assert_configuration_url(url: str):
@@ -193,7 +193,7 @@ async def test_device_configuration_url(hass: HomeAssistant):
 
     assert_configuration_url('http://1.2.3.4/')
 
-    on_data_pushed({sensor.nest_push_param: '4.3.2.1'})
+    on_data_pushed({'ip': '4.3.2.1'})
     on_data_pushed(dict(foo='bar'))
     await hass.async_block_till_done()
 
