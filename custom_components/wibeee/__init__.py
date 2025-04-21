@@ -23,8 +23,6 @@ PLATFORMS = [Platform.SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up platform from a ConfigEntry."""
-    hass.data.setdefault(DOMAIN, {})
-
     _LOGGER.info(f"Setup config entry '{entry.title}' (unique_id={entry.unique_id})")
 
     # Update things based on options
