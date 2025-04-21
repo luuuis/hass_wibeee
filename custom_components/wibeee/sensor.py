@@ -329,16 +329,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for sensor in sensors:
         _LOGGER.debug("Added '%s' (unique_id=%s)", sensor, sensor.unique_id)
 
-    disposers = hass.data[DOMAIN][entry.entry_id]['disposers']
-
-    remove_fetch_listener = setup_local_polling(hass, api, wibeee_id, sensors, scan_interval)
-    disposers.update(fetch_status=remove_fetch_listener)
-
-    remove_issue_maintainer = setup_repairs(hass, entry, sensors)
-    disposers.update(issue_maintainer=remove_issue_maintainer)
-
-    remove_push_listener = await async_setup_local_push(hass, entry, mac_addr, sensors)
-    disposers.update(push_listener=remove_push_listener)
+    entry.async_on_unload(setup_local_polling(hass, api, wibeee_id, sensors, scan_interval))
+    entry.async_on_unload(setup_repairs(hass, entry, sensors))
+    entry.async_on_unload(await async_setup_local_push(hass, entry, mac_addr, sensors))
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
                  f"scan_interval={scan_interval}, timeout={timeout})")
