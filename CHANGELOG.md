@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0-beta.1](https://github.com/luuuis/hass_wibeee/compare/v4.1.0-beta...v4.1.0-beta.1) (2025-06-22)
+
+
+### Features
+
+* update device configuration_url from Wibeee push data ([#146](https://github.com/luuuis/hass_wibeee/issues/146)) ([5ea53c1](https://github.com/luuuis/hass_wibeee/commit/5ea53c1d8cdf1c4b8de4df8308b47715b66bcd14))
+
 ## [4.1.0-beta](https://github.com/luuuis/hass_wibeee/compare/v4.0.0...v4.1.0-beta) (2025-04-02)
 
 
