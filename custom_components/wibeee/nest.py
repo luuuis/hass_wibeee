@@ -10,6 +10,7 @@ from homeassistant.components.network import async_get_source_ip
 from homeassistant.components.network.const import PUBLIC_TARGET_IP
 from homeassistant.core import callback, Event
 from homeassistant.helpers import singleton
+
 from .const import NEST_NULL_UPSTREAM
 
 LOGGER = logging.getLogger(__name__)
@@ -149,7 +150,7 @@ async def extract_query_params(req: web.Request) -> DecodedRequest:
 async def extract_json_body(req: web.Request) -> DecodedRequest:
     """Extracts Wibeee data from JSON request body."""
     body = await req.text() if req.can_read_body else None
-    LOGGER.debug("Parsing JSON in %s %s", req.method, req.path, body)
+    LOGGER.debug("Parsing JSON in %s %s", req.method, req.path)
     parsed_body = None
     parse_error = None
     try:
