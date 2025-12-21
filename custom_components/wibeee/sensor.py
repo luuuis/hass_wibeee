@@ -325,7 +325,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         return reg_sensors
 
     sensors = rehydrate_saved_entities() or await create_fetched_entities()
-    async_add_entities(sensors, True)
+
+    # Diag/Top sensors need to be added first because they are referenced by the other sensors.
+    async_add_entities(sorted(sensors, key=lambda s: s.slot.value.unique_name_suffix, reverse=True), True)
     for sensor in sensors:
         _LOGGER.debug("Added '%s' (unique_id=%s)", sensor, sensor.unique_id)
 
