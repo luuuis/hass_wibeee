@@ -1,4 +1,3 @@
-from typing import Dict
 from unittest.mock import patch, MagicMock
 
 import homeassistant.helpers.entity_registry as er
@@ -7,15 +6,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.wibeee.api import WibeeeAPI
 from custom_components.wibeee.sensor import DeviceInfo
-
-
-def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, any]:
-    return {
-        'id': info.id,
-        'softVersion': info.softVersion,
-        'ipAddr': info.ipAddr,
-        'macAddr': info.macAddr,
-    } | sensor_values
 
 
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
