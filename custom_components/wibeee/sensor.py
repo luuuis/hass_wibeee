@@ -42,7 +42,6 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant, callback, CALLBACK_TYPE
-from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry, DeviceRegistry
 from homeassistant.helpers.entity import DeviceInfo as HassDeviceInfo
@@ -52,7 +51,7 @@ from homeassistant.helpers.issue_registry import async_create_issue, async_delet
 from homeassistant.helpers.typing import StateType
 from homeassistant.util.dt import as_local
 
-from .api import WibeeeAPI, DeviceInfo, WibeeeID
+from .api import WibeeeAPI, DeviceInfo
 from .const import (
     DOMAIN,
     DEFAULT_TIMEOUT,
@@ -151,6 +150,7 @@ KNOWN_SENSORS = (
     SensorType('ereactl', 'o', 'Inductive Reactive Energy', ENERGY_VOLT_AMPERE_REACTIVE_HOUR, ENERGY_VOLT_AMPERE_REACTIVE_HOUR),
     # Diagnostic sensors:
     SensorType('macAddr', 'mac', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
+    SensorType('macAddr', 'mac', 'MAC Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     IP_SENSOR_TYPE := SensorType('ipAddr', 'ip', 'IP Address', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     SensorType('softVersion', 'soft', 'Firmware', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
     SensorType('phasesSequence', 'ps', 'Phases Sequence', entity_category=EntityCategory.DIAGNOSTIC, slots=(Slot.Device,)),
@@ -192,27 +192,6 @@ def update_sensors(sensors: Iterable['WibeeeSensor'], update_source: str,
     for s in sensors:
         value = data.get(lookup_key(s), STATE_UNAVAILABLE)
         s.update_value(value, update_source)
-
-
-def setup_local_polling(hass: HomeAssistant, api: WibeeeAPI, wibeee_id: WibeeeID, sensors: list['WibeeeSensor'],
-                        scan_interval: timedelta) -> CALLBACK_TYPE:
-    if scan_interval.total_seconds() == 0:
-        return lambda: None
-
-    def poll_xml_param(sensor: WibeeeSensor) -> str:
-        return sensor.status_xml_param
-
-    async def fetching_data(now=None):
-        fetched = {}
-        try:
-            fetched = await api.async_fetch_values(wibeee_id, retries=3)
-        except Exception as err:
-            if now is None:
-                raise PlatformNotReady from err
-
-        update_sensors(sensors, 'values.xml', poll_xml_param, fetched)
-
-    return async_track_time_interval(hass, fetching_data, scan_interval)
 
 
 async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_address: str, sensors: list['WibeeeSensor']):
@@ -329,7 +308,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for sensor in sensors:
         _LOGGER.debug("Added '%s' (unique_id=%s)", sensor, sensor.unique_id)
 
-    entry.async_on_unload(setup_local_polling(hass, api, wibeee_id, sensors, scan_interval))
     entry.async_on_unload(setup_repairs(hass, entry, sensors))
     entry.async_on_unload(await async_setup_local_push(hass, entry, mac_addr, sensors))
 
@@ -390,7 +368,6 @@ class WibeeeSensor(SensorEntity):
         self._attr_should_poll = False
         self._attr_device_info = device_info
         self.slot = slot
-        self.status_xml_param = f"{sensor_type.poll_var_prefix}{slot.value.poll_var_suffix}"
         self.nest_push_param = f"{sensor_type.push_var_prefix}{slot.value.push_var_suffix}"
         self.sensor_type = sensor_type
 
