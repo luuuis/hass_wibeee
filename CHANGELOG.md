@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0-beta.1](https://github.com/luuuis/hass_wibeee/compare/v4.1.0-beta...v4.1.0-beta.1) (2025-12-21)
+
+
+### Features
+
+* update device configuration_url from Wibeee push data ([#146](https://github.com/luuuis/hass_wibeee/issues/146)) ([5ea53c1](https://github.com/luuuis/hass_wibeee/commit/5ea53c1d8cdf1c4b8de4df8308b47715b66bcd14))
+
+
+### Bug Fixes
+
+* ensure Top/Diag sensors are added before L1/L2/L3 ([#157](https://github.com/luuuis/hass_wibeee/issues/157)) ([ce1e78a](https://github.com/luuuis/hass_wibeee/commit/ce1e78aa25fc0929e86c63cf1d79e2a7cb524a53))
+
 ## [4.1.0-beta](https://github.com/luuuis/hass_wibeee/compare/v4.0.0...v4.1.0-beta) (2025-04-02)
 
 
