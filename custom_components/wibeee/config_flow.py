@@ -11,7 +11,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
-from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector, NumberSelector, NumberSelectorConfig
+from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector, NumberSelector, NumberSelectorConfig, \
+    NumberSelectorMode
 
 from .api import WibeeeAPI
 from .const import (
@@ -115,7 +116,7 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(
                 CONF_THROTTLE,
                 default=self.config_entry.options.get(CONF_THROTTLE),
-            ): NumberSelector(NumberSelectorConfig(min=0, max=300, unit_of_measurement="seconds")),
+            ): NumberSelector(NumberSelectorConfig(min=0, max=300, unit_of_measurement="seconds", mode=NumberSelectorMode.BOX)),
         })
 
         return self.async_show_form(
