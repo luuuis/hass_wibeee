@@ -11,13 +11,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
-from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector
+from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector, NumberSelector, NumberSelectorConfig
 
 from .api import WibeeeAPI
 from .const import (
     DOMAIN,
     CONF_MAC_ADDRESS,
     CONF_NEST_UPSTREAM,
+    CONF_THROTTLE,
     CONF_WIBEEE_ID,
     NEST_ALL_UPSTREAMS,
     NEST_NULL_UPSTREAM,
@@ -49,7 +50,7 @@ async def validate_input(hass: HomeAssistant, user_input: dict) -> [str, str, di
 
 class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Wibeee config flow."""
-    VERSION = 4
+    VERSION = 5
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -103,14 +104,18 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Main options."""
         if user_input is not None:
-            self.options.update(user_input)
+            self.options.update({k: v for k, v in user_input.items() if v is not None})
             return self.async_create_entry(title="", data=self.options)
 
         data_schema = vol.Schema({
             vol.Required(
                 CONF_NEST_UPSTREAM,
                 default=self.config_entry.options.get(CONF_NEST_UPSTREAM, NEST_NULL_UPSTREAM)
-            ): SelectSelector(SelectSelectorConfig(options=NEST_ALL_UPSTREAMS, mode=SelectSelectorMode.DROPDOWN))
+            ): SelectSelector(SelectSelectorConfig(options=NEST_ALL_UPSTREAMS, mode=SelectSelectorMode.DROPDOWN)),
+            vol.Optional(
+                CONF_THROTTLE,
+                default=self.config_entry.options.get(CONF_THROTTLE),
+            ): NumberSelector(NumberSelectorConfig(min=0, max=300, unit_of_measurement="seconds")),
         })
 
         return self.async_show_form(

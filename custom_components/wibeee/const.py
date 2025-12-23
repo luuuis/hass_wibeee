@@ -15,6 +15,12 @@ CONF_MAC_ADDRESS = 'mac_address'
 CONF_WIBEEE_ID = 'wibeee_id'
 """Device's Wibeee ID, used for polling values.xml API."""
 
+CONF_THROTTLE = 'throttle_sensors'
+"""Minimum interval between sensor updates."""
+
+DEFAULT_THROTTLE = timedelta(seconds=5)
+"""Default minimum interval between sensor updates."""
+
 
 def _format_options(upstreams: dict[str, str]) -> list[SelectOptionDict]:
     return [SelectOptionDict(label=f'{cloud} ({url})', value=url) for cloud, url in upstreams.items()]

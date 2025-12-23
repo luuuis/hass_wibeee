@@ -171,7 +171,7 @@ async def test_via_device_link(mock_async_fetch_device_info, mock_async_fetch_va
     await hass.async_block_till_done()
 
     warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
-    assert len(warnings) is 0
+    assert len(warnings) == 0
 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
@@ -192,7 +192,7 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
     await hass.async_block_till_done()
 
     warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
-    assert len(warnings) is 0
+    assert len(warnings) == 0
 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
