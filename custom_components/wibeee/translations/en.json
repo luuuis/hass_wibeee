@@ -21,9 +21,8 @@
     "step": {
       "init": {
         "title": "Wibeee integration options",
-        "description": "Configure Polling and and Local Push",
+        "description": "Configure Local Push",
         "data": {
-          "scan_interval": "Device polling interval in seconds",
           "nest_upstream": "Cloud service to upload data to"
         }
       }
