@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .api import WibeeeAPI
 from .config_flow import validate_input
-from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, NEST_NULL_UPSTREAM
+from .const import DOMAIN, CONF_NEST_UPSTREAM, NEST_DEFAULT_UPSTREAM, CONF_MAC_ADDRESS, CONF_WIBEEE_ID, NEST_NULL_UPSTREAM, CONF_THROTTLE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,6 +81,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         }
 
         hass.config_entries.async_update_entry(config_entry, version=4, options=new_options)
+        _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'options': new_options})
+
+    # disable throttling for existing entries to maintain behaviour. new entries will use a default.
+    if config_entry.version < 5:
+        new_options = {k: v for k, v in config_entry.options.items()} | {CONF_THROTTLE: 0}
+
+        hass.config_entries.async_update_entry(config_entry, version=5, options=new_options)
         _LOGGER.info("Migration to version %s successful, saved: %s", config_entry.version, {'options': new_options})
 
     return True

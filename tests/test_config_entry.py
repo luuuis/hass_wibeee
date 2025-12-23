@@ -25,8 +25,8 @@ async def test_migrate_entry_from_1(_, mock_async_fetch_device_info, hass: HomeA
         'mac_address': 'abcdabcdabcd',  # to set up local push
         'wibeee_id': 'ozymandias',  # Wibeee id, needed for values.xml API
     }
-    assert configured_entry.options == {'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 4
+    assert configured_entry.options == {'nest_upstream': 'proxy_null', 'throttle_sensors': 0}
+    assert configured_entry.version == 5
 
 
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
@@ -55,8 +55,8 @@ async def test_migrate_entry_from_2(mock_async_entries_for_config_entry, _, mock
         'mac_address': 'abcdabcdabcd',  # to set up local push
         'wibeee_id': 'Upstairs',  # Wibeee id, needed for values.xml API
     }
-    assert configured_entry.options == {'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 4
+    assert configured_entry.options == {'nest_upstream': 'proxy_null', 'throttle_sensors': 0}
+    assert configured_entry.version == 5
 
 
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
@@ -83,8 +83,8 @@ async def test_migrate_entry_from_2_offline(mock_async_entries_for_config_entry,
         'mac_address': 'abcdabcdabcd',  # to set up local push
         'wibeee_id': 'Downstairs',  # Wibeee id, needed for values.xml API
     }
-    assert configured_entry.options == {'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 4
+    assert configured_entry.options == {'nest_upstream': 'proxy_null', 'throttle_sensors': 0}
+    assert configured_entry.version == 5
 
 
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
@@ -105,5 +105,49 @@ async def test_migrate_entry_from_3(_, __, hass: HomeAssistant):
         'mac_address': 'abcdabcdabcd',
         'wibeee_id': 'WIBEEE',
     }
+    assert configured_entry.options == {'nest_upstream': 'proxy_null', 'throttle_sensors': 0}
+    assert configured_entry.version == 5
+
+
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+async def test_migrate_entry_from_4(_, __, hass: HomeAssistant):
+    entry = MockConfigEntry(domain='wibeee',
+                            data={'host': '127.0.0.127', 'mac_address': 'abcdabcdabcd', 'wibeee_id': 'WIBEEE'},
+                            options={'nest_upstream': 'proxy_null'},
+                            version=4)
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert configured_entry.data == {
+        'host': '127.0.0.127',
+        'mac_address': 'abcdabcdabcd',
+        'wibeee_id': 'WIBEEE',
+    }
+    assert configured_entry.options == {'nest_upstream': 'proxy_null', 'throttle_sensors': 0}
+    assert configured_entry.version == 5
+
+
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+async def test_migrate_entry_from_5(_, __, hass: HomeAssistant):
+    entry = MockConfigEntry(domain='wibeee',
+                            data={'host': '127.0.0.127', 'mac_address': 'abcdabcdabcd', 'wibeee_id': 'WIBEEE'},
+                            options={'nest_upstream': 'proxy_null'},
+                            version=5)
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    configured_entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert configured_entry.data == {
+        'host': '127.0.0.127',
+        'mac_address': 'abcdabcdabcd',
+        'wibeee_id': 'WIBEEE',
+    }
     assert configured_entry.options == {'nest_upstream': 'proxy_null'}
-    assert configured_entry.version == 4
+    assert configured_entry.version == 5

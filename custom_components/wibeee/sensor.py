@@ -17,6 +17,7 @@ import homeassistant.helpers.config_validation as cv
 import homeassistant.helpers.device_registry as dr
 import homeassistant.helpers.entity_registry as er
 import homeassistant.helpers.issue_registry as ir
+import homeassistant.util as util
 import voluptuous as vol
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -54,9 +55,11 @@ from homeassistant.util.dt import as_local
 from .api import WibeeeAPI, DeviceInfo
 from .const import (
     DOMAIN,
+    DEFAULT_THROTTLE,
     DEFAULT_TIMEOUT,
     CONF_MAC_ADDRESS,
     CONF_NEST_UPSTREAM,
+    CONF_THROTTLE,
     CONF_WIBEEE_ID,
 )
 from .nest import get_nest_proxy
@@ -239,8 +242,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     host = entry.data[CONF_HOST]
     mac_addr = entry.data[CONF_MAC_ADDRESS]
     wibeee_id = entry.data[CONF_WIBEEE_ID]
-    scan_interval = timedelta(seconds=0)
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
+    throttle = timedelta(seconds=entry.options.get(CONF_THROTTLE, DEFAULT_THROTTLE.total_seconds()))
 
     # first set up the Nest proxy. it's important to do this first because the device will not respond to status.xml
     # calls if it is unable to push data up to Wibeee Nest, causing this integration to fail at start-up.
@@ -261,7 +264,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                    for slot in fetched_slots}
 
         return [
-            WibeeeSensor(mac_addr, device, slot, sensor_type, fetched_values.get(poll_var))
+            WibeeeSensor(mac_addr, device, slot, sensor_type, throttle, fetched_values.get(poll_var))
             for poll_var in fetched_values if poll_var in known_poll_var_slots
             for sensor_type, slot in [known_poll_var_slots[poll_var]]
             if (device := devices[slot])
@@ -283,7 +286,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         known_unique_name_slots = _known_sensor_slots(lambda st, slot: f'{st.unique_name.lower()}_{slot.value.unique_name_suffix}')
 
         reg_sensors: list[WibeeeSensor] = [
-            WibeeeSensor(device_mac_addr, device, slot, sensor_type, initial_value=None)
+            WibeeeSensor(device_mac_addr, device, slot, sensor_type, throttle, initial_value=None)
             for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id)
             if entity_entry.domain == Platform.SENSOR
 
@@ -313,7 +316,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entry.async_on_unload(await async_setup_local_push(hass, entry, mac_addr, sensors))
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
-                 f"scan_interval={scan_interval}, timeout={timeout})")
+                 f"timeout={timeout}, throttle={throttle})")
     return True
 
 
@@ -355,7 +358,8 @@ def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['Wibeee
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
-    def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot: Slot, sensor_type: SensorType, initial_value: StateType):
+    def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot: Slot, sensor_type: SensorType, throttle: timedelta,
+                 initial_value: StateType):
         """Initialize the sensor."""
         self._attr_native_unit_of_measurement = sensor_type.unit
         self._attr_native_value = initial_value
@@ -371,6 +375,8 @@ class WibeeeSensor(SensorEntity):
         self.slot = slot
         self.nest_push_param = f"{sensor_type.push_var_prefix}{slot.value.push_var_suffix}"
         self.sensor_type = sensor_type
+        if throttle.total_seconds() > 0:
+            self.update_value = util.Throttle(throttle)(self.update_value)
 
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:

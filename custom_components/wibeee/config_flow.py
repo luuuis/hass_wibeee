@@ -11,13 +11,15 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
-from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector
+from homeassistant.helpers.selector import SelectSelectorConfig, SelectSelectorMode, SelectSelector, NumberSelector, NumberSelectorConfig, \
+    NumberSelectorMode
 
 from .api import WibeeeAPI
 from .const import (
     DOMAIN,
     CONF_MAC_ADDRESS,
     CONF_NEST_UPSTREAM,
+    CONF_THROTTLE,
     CONF_WIBEEE_ID,
     NEST_ALL_UPSTREAMS,
     NEST_NULL_UPSTREAM,
@@ -49,7 +51,7 @@ async def validate_input(hass: HomeAssistant, user_input: dict) -> [str, str, di
 
 class WibeeeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Wibeee config flow."""
-    VERSION = 4
+    VERSION = 5
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -102,22 +104,34 @@ class WibeeeOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Main options."""
-        if user_input is not None:
-            self.options.update(user_input)
-            return self.async_create_entry(title="", data=self.options)
-
-        data_schema = vol.Schema({
+        data_schema = self.add_suggested_values_to_schema(vol.Schema({
             vol.Required(
                 CONF_NEST_UPSTREAM,
-                default=self.config_entry.options.get(CONF_NEST_UPSTREAM, NEST_NULL_UPSTREAM)
-            ): SelectSelector(SelectSelectorConfig(options=NEST_ALL_UPSTREAMS, mode=SelectSelectorMode.DROPDOWN))
-        })
+                default=self.options.get(CONF_NEST_UPSTREAM, NEST_NULL_UPSTREAM)
+            ): SelectSelector(SelectSelectorConfig(options=NEST_ALL_UPSTREAMS, mode=SelectSelectorMode.DROPDOWN)),
+            vol.Optional(
+                CONF_THROTTLE,
+            ): NumberSelector(NumberSelectorConfig(min=0, max=300, unit_of_measurement="seconds", mode=NumberSelectorMode.BOX)),
+        }), self.options)
+
+        if user_input is not None:
+            # Update with provided values
+            self.options.update(user_input)
+
+            missing_confs = {conf for key in data_schema.schema.keys()
+                             if (conf := key.schema)
+                             if user_input.get(conf, None) is None}
+
+            # clear optional fields
+            for conf in missing_confs:
+                self.options.pop(conf, None)
+
+            return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
             step_id="init",
             data_schema=data_schema
         )
-
 
 class NoDeviceInfo(exceptions.HomeAssistantError):
     """Error to indicate we couldn't get info from Wibeee."""

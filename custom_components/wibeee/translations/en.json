@@ -23,7 +23,12 @@
         "title": "Wibeee integration options",
         "description": "Configure Local Push",
         "data": {
-          "nest_upstream": "Cloud service to upload data to"
+          "nest_upstream": "Cloud service",
+          "throttle_sensors": "Sensor update interval"
+        },
+        "data_description": {
+          "nest_upstream": "Cloud service to upload data to. Default is Wibeee Nest.",
+          "throttle_sensors": "Minimum interval between sensor updates. Default is 5 seconds. Set to 0 to update always."
         }
       }
     }

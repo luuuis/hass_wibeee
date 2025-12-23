@@ -12,15 +12,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components import wibeee
 from custom_components.wibeee.api import WibeeeAPI
 from custom_components.wibeee.sensor import DeviceInfo, Slot
-
-
-def _build_values(info: DeviceInfo, sensor_values: Dict[str, any]) -> Dict[str, any]:
-    return {
-        'id': info.id,
-        'softVersion': info.softVersion,
-        'ipAddr': info.ipAddr,
-        'macAddr': info.macAddr,
-    } | sensor_values
+from .test_helpers import build_values
 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
@@ -94,7 +86,7 @@ async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_dev
         assert values == expected
 
     device_infos = {info.ipAddr: info for info, sensors in devices_data}
-    device_values = {i.ipAddr: _build_values(i, sensors) for i, sensors in devices_data}
+    device_values = {i.ipAddr: build_values(i, sensors) for i, sensors in devices_data}
 
     mock_async_fetch_device_info.side_effect = lambda self, retries=0: device_infos[self.host]
     mock_async_fetch_values.side_effect = lambda self, device_id, var_names=None, retries=0: device_values[self.host]
@@ -171,7 +163,7 @@ async def test_via_device_link(mock_async_fetch_device_info, mock_async_fetch_va
     await hass.async_block_till_done()
 
     warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
-    assert len(warnings) is 0
+    assert len(warnings) == 0
 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
@@ -192,7 +184,7 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
     await hass.async_block_till_done()
 
     warnings = [(logger, msg) for logger, _, msg in caplog.record_tuples if logger != 'homeassistant.loader' and 'wibeee' in msg]
-    assert len(warnings) is 0
+    assert len(warnings) == 0
 
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
@@ -200,7 +192,7 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
 async def test_device_configuration_url(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
     dev = DeviceInfo('ozymandias', 'abcdabcdabcd', '100.1', 'WBB', '1.2.3.4')
     mock_async_fetch_device_info.return_value = dev
-    mock_async_fetch_values.return_value = _build_values(dev, {})
+    mock_async_fetch_values.return_value = build_values(dev, {})
 
     entry = MockConfigEntry(domain='wibeee', data=dict(host=dev.ipAddr, mac_address=dev.macAddr, wibeee_id=dev.id), version=4)
     entry.add_to_hass(hass)
