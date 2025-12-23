@@ -2,15 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [4.1.0](https://github.com/luuuis/hass_wibeee/compare/v4.1.0-beta.1...v4.1.0) (2025-12-23)
+## [4.1.0](https://github.com/luuuis/hass_wibeee/compare/v4.0.0...v4.1.0) (2025-12-23)
+
+### ⚠ BREAKING CHANGES
+
+* Polling for sensor updates no longer supported. Updates work via Local Push, meaning that
+  Wibeee must be able to connect to Home Assistant on port 8600.
+
+### Features
+
+* update device configuration_url from Wibeee push data ([#146](https://github.com/luuuis/hass_wibeee/issues/146)) ([5ea53c1](https://github.com/luuuis/hass_wibeee/commit/5ea53c1d8cdf1c4b8de4df8308b47715b66bcd14))
+* mark stale sensors as unavailable if no Local Push updates received recently ([#142](https://github.com/luuuis/hass_wibeee/issues/142)) ([42f179f](https://github.com/luuuis/hass_wibeee/commit/42f179fc47ec4aae692457804271cc5f9ab3ba07))
+* remove Polling Interval and Proxy Disabled options ([#141](https://github.com/luuuis/hass_wibeee/issues/141)) ([cc044ca](https://github.com/luuuis/hass_wibeee/commit/cc044cae181d880cd0a7675546c595fe8030760f))
+* **sensors:** added diagnostic sensors on device ([#137](https://github.com/luuuis/hass_wibeee/issues/137)) ([95753de](https://github.com/luuuis/hass_wibeee/commit/95753dec676fab4ee7e86bfecaa08312320b4f85))
+* several improvements around the "WIBEEE is not receiving updates" repair ([#144](https://github.com/luuuis/hass_wibeee/issues/144)) ([15759bb](https://github.com/luuuis/hass_wibeee/commit/15759bb0532224461ebcbd3868aef39af6b62d1c))
 
 
-### Miscellaneous Chores
+### Bug Fixes
 
-* release 4.1.0 ([d019ea9](https://github.com/luuuis/hass_wibeee/commit/d019ea986979098838eb96673234173b423b4038))
+* ensure Top/Diag sensors are added before L1/L2/L3 ([#157](https://github.com/luuuis/hass_wibeee/issues/157)) ([ce1e78a](https://github.com/luuuis/hass_wibeee/commit/ce1e78aa25fc0929e86c63cf1d79e2a7cb524a53))
+* **deprecation:** don't set self.config_entry on OptionsFlow ([#140](https://github.com/luuuis/hass_wibeee/issues/140)) ([8a86136](https://github.com/luuuis/hass_wibeee/commit/8a86136469cd7c5ba862c5594c2c8c7085c30ff6))
+
 
 ## [4.0.0](https://github.com/luuuis/hass_wibeee/compare/v3.6.9...v4.0.0) (2025-03-28)
-
 
 ### Features
 
