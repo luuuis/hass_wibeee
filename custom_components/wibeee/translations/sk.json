@@ -21,9 +21,8 @@
     "step": {
       "init": {
         "title": "Možnosti integrácie Wibeee",
-        "description": "Nakonfigurujte polling a a lokálne push",
+        "description": "Nakonfigurujte lokálne push",
         "data": {
-          "scan_interval": "Interval výzvy zariadenia v sekundách",
           "nest_upstream": "Cloudová služba na nahrávanie údajov"
         }
       }
