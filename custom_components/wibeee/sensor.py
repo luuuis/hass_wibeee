@@ -242,7 +242,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     host = entry.data[CONF_HOST]
     mac_addr = entry.data[CONF_MAC_ADDRESS]
     wibeee_id = entry.data[CONF_WIBEEE_ID]
-    scan_interval = timedelta(seconds=0)
     timeout = timedelta(seconds=entry.options.get(CONF_TIMEOUT, DEFAULT_TIMEOUT.total_seconds()))
     throttle = timedelta(seconds=entry.options.get(CONF_THROTTLE, DEFAULT_THROTTLE.total_seconds()))
 
@@ -317,7 +316,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entry.async_on_unload(await async_setup_local_push(hass, entry, mac_addr, sensors))
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
-                 f"scan_interval={scan_interval}, timeout={timeout})")
+                 f"timeout={timeout}, throttle={throttle})")
     return True
 
 
