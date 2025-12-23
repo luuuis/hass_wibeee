@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.1.0](https://github.com/luuuis/hass_wibeee/compare/v4.1.0-beta.1...v4.1.0) (2025-12-23)
+
+
+### Miscellaneous Chores
+
+* release 4.1.0 ([d019ea9](https://github.com/luuuis/hass_wibeee/commit/d019ea986979098838eb96673234173b423b4038))
+
 ## [4.0.0](https://github.com/luuuis/hass_wibeee/compare/v3.6.9...v4.0.0) (2025-03-28)
 
 
