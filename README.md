@@ -6,7 +6,7 @@
 
 ## Features
 
-Integrates CIRCUTOR Wibeee/Mirubee energy monitoring devices into Home Assistant. Works with single and three-phase
+Integrates Wibeee and Mirubee energy monitoring devices into Home Assistant. Works with single and three-phase
 versions.
 
 ### Sensors
@@ -85,10 +85,13 @@ and had a tendency to overwhelm the devices.
 
 #### Step 1: configure Server URL in Wibeee (REQUIRED)
 
-Open the device UI and in **Advanced Options** update the **Server** section to contain the IP address of your Home
-Assistant.
+Open the Wibeee's configuration UI by going to the [Devices page](https://my.home-assistant.io/redirect/devices/) in Home
+Assistant, finding your Wibee device and clicking the **Visit** link. Once there, navigate to **Advanced Options** update
+the **Server** section to contain the IP address of your Home Assistant.
 
-![Wibeee Web UI](https://community-assets.home-assistant.io/original/4X/3/4/d/34d66a091cd79ce4d12b5a9cf53f41e4c4b49612.jpeg)
+| Device page | Configuration UI |
+|-------------|-----------|
+| <img width="335" height="279" alt="Device page" src="https://github.com/user-attachments/assets/6446c65f-246a-4f8a-b00a-c2672d230537" /> | ![Wibeee Web UI](https://community-assets.home-assistant.io/original/4X/3/4/d/34d66a091cd79ce4d12b5a9cf53f41e4c4b49612.jpeg) |
 
 **Default**: Server URL is `nest-ingest.wibeee.com` and Server Port is 80  
 **After**: Server URL is the IP address of your HA instance and Server Port is 8600
@@ -107,5 +110,5 @@ In the integration's configuration under `Cloud service to upload data to` selec
 * Choose one of the other Cloud services such as Iberdrola and SolarProfit to continue using their apps with Home
   Assistant.
 
-![Wibeee integration polling interval configuration](https://github.com/luuuis/hass_wibeee/assets/161006/87309a25-2ee3-4658-8662-61ab0a068234)
-![Wibeee integration local push configuration](https://github.com/luuuis/hass_wibeee/assets/161006/dc047ecc-743b-43a9-a3a8-fea9660c7775)
+<img width="400" alt="Wibeee integration options flow" src="https://github.com/user-attachments/assets/de6554ab-3b6a-426a-b244-21f714cf8ed0" />
+<img width="400" alt="Wibeee integration cloud service dropdown" src="https://github.com/user-attachments/assets/a8a990ba-efcd-4ef8-97ed-670a6a5ee230" />
