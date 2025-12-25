@@ -100,7 +100,7 @@ class Slot(Enum):
     L1 = SlotData('1', '1', '1', is_clamp=True)
     L2 = SlotData('2', '2', '2', is_clamp=True)
     L3 = SlotData('3', '3', '3', is_clamp=True)
-    Total = SlotData('t', '4', '4', is_clamp=False)
+    Total = SlotData('t', 't', '4', is_clamp=False)
     Device = SlotData('', '', '5', is_clamp=False)
 
 
