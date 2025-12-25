@@ -215,8 +215,9 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_ad
 
 async def _setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEntry) -> Callable[[dict[str, Any]], type(None)]:
     device_registry = dr.async_get(hass)
-    update_devices = {d.id: d for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id) if
-                      d.configuration_url}
+    update_devices = {d.id: d
+                      for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+                      if d.configuration_url}
     ip_push_param = f"{IP_SENSOR_TYPE.push_var_prefix}{Slot.Device.value.push_var_suffix}"
 
     _LOGGER.debug('Registered devices to update from push param "%s": %s', ip_push_param, update_devices)
