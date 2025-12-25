@@ -215,17 +215,27 @@ async def async_setup_local_push(hass: HomeAssistant, entry: ConfigEntry, mac_ad
 
 async def _setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEntry) -> Callable[[dict[str, Any]], type(None)]:
     device_registry = dr.async_get(hass)
-    update_devices = {d.id: str(d.identifiers) for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id) if
-                      d.configuration_url}
+    update_devices = {d.id: d
+                      for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+                      if d.configuration_url}
     ip_push_param = f"{IP_SENSOR_TYPE.push_var_prefix}{Slot.Device.value.push_var_suffix}"
 
     _LOGGER.debug('Registered devices to update from push param "%s": %s', ip_push_param, update_devices)
 
     async def _update_ip_address(ip_addr: str):
-        for d_id, name in update_devices.items():
-            configuration_url = _make_configuration_url(ip_addr)
-            device_registry.async_update_device(d_id, configuration_url=configuration_url)
-            _LOGGER.debug(f'Updated {name} (device_id={d_id}) with configuration_url={configuration_url}')
+        configuration_url = _make_configuration_url(ip_addr)
+        for d_id in list(update_devices.keys()):
+            d_entry = update_devices[d_id]
+            if d_entry.configuration_url != configuration_url:
+                updated = device_registry.async_update_device(d_id, configuration_url=configuration_url)
+                update_devices.update(d_id=updated)
+                _LOGGER.info(
+                    'Updated %s (device_id=%s) with configuration_url=%s (was: %s)',
+                    d_entry.identifiers,
+                    d_id,
+                    configuration_url,
+                    d_entry.configuration_url
+                )
 
     def _update_devices(data: dict[str, Any]):
         if ip_push_param and ip_push_param in data:
