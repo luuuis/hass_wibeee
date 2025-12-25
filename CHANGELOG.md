@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.2.0](https://github.com/luuuis/hass_wibeee/compare/v4.1.0...v4.2.0) (2025-12-25)
+
+
+### Features
+
+* optional throttling of sensor updates ([#162](https://github.com/luuuis/hass_wibeee/issues/162)) ([77da0ea](https://github.com/luuuis/hass_wibeee/commit/77da0eaa5a53fc3e05286cf2056f8f2404ecffc9))
+
+
+### Bug Fixes
+
+* device Total sensors not updating from Local Push ([#170](https://github.com/luuuis/hass_wibeee/issues/170)) ([fc2d669](https://github.com/luuuis/hass_wibeee/commit/fc2d66943ac6167f80a18f27e8e65e821230decf))
+* skip dr.async_update_device call if IP address is unchanged ([#168](https://github.com/luuuis/hass_wibeee/issues/168)) ([881c26d](https://github.com/luuuis/hass_wibeee/commit/881c26d5375df000fb8675c753ec1528575ceb9c))
+
+
+### Build System
+
+* remove prerelease on main ([#164](https://github.com/luuuis/hass_wibeee/issues/164)) ([524e6d3](https://github.com/luuuis/hass_wibeee/commit/524e6d3456f6a37607aa85306131d1d30945916c))
+
 ## [4.1.0](https://github.com/luuuis/hass_wibeee/compare/v4.0.0...v4.1.0) (2025-12-23)
 
 ### ⚠ BREAKING CHANGES
