@@ -86,7 +86,10 @@ and had a tendency to overwhelm the devices.
 #### Step 1: configure Server URL in Wibeee (REQUIRED)
 
 Open the Wibeee's configuration UI by going to the [Devices page](https://my.home-assistant.io/redirect/devices/) in Home
-Assistant, finding your Wibee device and clicking the **Visit** link. Once there, navigate to **Advanced Options** update
+Assistant, finding your Wibee device and clicking the **Visit** link. The default username is `user` and the default password
+is `user` if you have not changed them.
+
+Once there, navigate to **Advanced Options** update
 the **Server** section to contain the IP address of your Home Assistant.
 
 | Device page | Configuration UI |
