@@ -223,8 +223,9 @@ async def _setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEnt
     _LOGGER.debug('Registered devices to update from push param "%s": %s', ip_push_param, update_devices)
 
     async def _update_ip_address(ip_addr: str):
-        for d_id, d_entry in update_devices.items():
-            configuration_url = _make_configuration_url(ip_addr)
+        configuration_url = _make_configuration_url(ip_addr)
+        for d_id in list(update_devices.keys()):
+            d_entry = update_devices[d_id]
             if d_entry.configuration_url != configuration_url:
                 updated = device_registry.async_update_device(d_id, configuration_url=configuration_url)
                 update_devices.update(d_id=updated)
