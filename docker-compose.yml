@@ -1,9 +1,7 @@
-version: 'latest'
-
 services:
   home-assistant:
     container_name: homeassistant_wibeee
-    image: ghcr.io/home-assistant/home-assistant:2025.1.1
+    image: ghcr.io/home-assistant/home-assistant:2026.3.0
     environment:
       - TZ=UTC
     ports:

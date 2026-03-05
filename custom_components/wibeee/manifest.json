@@ -14,7 +14,7 @@
   "issue_tracker": "https://github.com/luuuis/hass_wibeee/issues",
   "requirements": [
     "xmltodict==0.14.2",
-    "lxml>=5.3.1,<6"
+    "lxml>=5.3.1,<7"
   ],
   "version": "4.2.0"
 }
