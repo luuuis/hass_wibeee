@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.0](https://github.com/luuuis/hass_wibeee/compare/v4.2.0...v4.3.0) (2026-03-05)
+
+
+### Features
+
+* Home Assistant 2026.3.0 compatibility ([#177](https://github.com/luuuis/hass_wibeee/issues/177)) ([dc34ee2](https://github.com/luuuis/hass_wibeee/commit/dc34ee238ec48ea9f9ac93bfd7c600518e91dbb3))
+
 ## [4.2.0](https://github.com/luuuis/hass_wibeee/compare/v4.1.0...v4.2.0) (2025-12-25)
 
 
