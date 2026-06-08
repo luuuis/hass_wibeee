@@ -31,5 +31,6 @@ NEST_ALL_UPSTREAMS: list[SelectOptionDict] = [SelectOptionDict(label='Local only
                                              _format_options({
                                                  'Wibeee Nest': NEST_DEFAULT_UPSTREAM,
                                                  'Iberdrola': 'http://datosmonitorconsumo.iberdrola.es:8080',
+                                                 'Iberdrola (wibeee.com)': 'http://ingest-prod-iberdrola.wibeee.com:80',
                                                  'SolarProfit': 'http://wdata.solarprofit.es:8080',
                                              })
