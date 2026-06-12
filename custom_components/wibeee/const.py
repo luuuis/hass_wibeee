@@ -22,15 +22,15 @@ DEFAULT_THROTTLE = timedelta(seconds=5)
 """Default minimum interval between sensor updates."""
 
 
-def _format_options(upstreams: dict[str, str]) -> list[SelectOptionDict]:
-    return [SelectOptionDict(label=f'{cloud} ({url})', value=url) for cloud, url in upstreams.items()]
+def _format_options(upstreams: list[tuple[str, str]]) -> list[SelectOptionDict]:
+    return [SelectOptionDict(label=f'{cloud} ({url})', value=url) for cloud, url in upstreams]
 
 
 NEST_NULL_UPSTREAM: str = 'proxy_null'
 NEST_ALL_UPSTREAMS: list[SelectOptionDict] = [SelectOptionDict(label='Local only (no Cloud)', value=NEST_NULL_UPSTREAM)] + \
-                                             _format_options({
-                                                 'Wibeee Nest': NEST_DEFAULT_UPSTREAM,
-                                                 'Iberdrola': 'http://datosmonitorconsumo.iberdrola.es:8080',
-                                                 'Iberdrola (wibeee.com)': 'http://ingest-prod-iberdrola.wibeee.com:80',
-                                                 'SolarProfit': 'http://wdata.solarprofit.es:8080',
-                                             })
+                                             _format_options([
+                                                 ('Wibeee Nest', NEST_DEFAULT_UPSTREAM),
+                                                 ('Iberdrola', 'http://datosmonitorconsumo.iberdrola.es:8080'),
+                                                 ('Iberdrola', 'http://ingest-prod-iberdrola.wibeee.com:80'),
+                                                 ('SolarProfit', 'http://wdata.solarprofit.es:8080'),
+                                             ])
