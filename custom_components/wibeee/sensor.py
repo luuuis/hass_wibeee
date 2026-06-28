@@ -18,6 +18,7 @@ import homeassistant.helpers.device_registry as dr
 import homeassistant.helpers.entity_registry as er
 import homeassistant.helpers.issue_registry as ir
 import homeassistant.util as util
+import homeassistant.util.dt as dt_util
 import voluptuous as vol
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -132,7 +133,7 @@ class SensorType(NamedTuple):
     @property
     def state_class(self: 'SensorType') -> SensorStateClass | None:
         if self.device_class in ENERGY_CLASSES:
-            return SensorStateClass.TOTAL_INCREASING
+            return SensorStateClass.TOTAL
 
         if self.unit or self.device_class:
             return SensorStateClass.MEASUREMENT
@@ -365,6 +366,13 @@ def setup_repairs(hass: HomeAssistant, entry: ConfigEntry, sensors: list['Wibeee
     return async_track_time_interval(hass, check_for_stale_states, stale_threshold * 2, name=issue_id)
 
 
+def _is_zero_value(value: StateType) -> bool:
+    try:
+        return float(value) == 0.0
+    except (TypeError, ValueError):
+        return False
+
+
 class WibeeeSensor(SensorEntity):
     """Implementation of Wibeee sensor."""
 
@@ -386,11 +394,25 @@ class WibeeeSensor(SensorEntity):
         self.nest_push_param = f"{sensor_type.push_var_prefix}{slot.value.push_var_suffix}"
         self.sensor_type = sensor_type
         if throttle.total_seconds() > 0:
-            self.update_value = util.Throttle(throttle)(self.update_value)
+            self._update_ha_state = util.Throttle(throttle)(self._update_ha_state_now)
+        else:
+            self._update_ha_state = self._update_ha_state_now
 
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:
         """Updates this sensor from the fetched status value."""
+        if self.sensor_type.device_class in ENERGY_CLASSES and value is not STATE_UNAVAILABLE:
+            prev = self._attr_native_value
+            if prev is not None and _is_zero_value(value) and not _is_zero_value(prev):
+                self._attr_last_reset = dt_util.utcnow()
+                _LOGGER.info("Energy counter reset detected for %s (previous=%s)", self, prev)
+                self._update_ha_state_now(value, update_source)
+                return
+
+        self._update_ha_state(value, update_source)
+
+    @callback
+    def _update_ha_state_now(self, value: StateType, update_source: str = '') -> None:
         if self.enabled:
             self._attr_native_value = None if value is STATE_UNAVAILABLE else value
             self._attr_available = value is not STATE_UNAVAILABLE
