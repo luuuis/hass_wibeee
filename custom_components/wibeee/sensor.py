@@ -405,7 +405,7 @@ class WibeeeSensor(SensorEntity):
             prev = self._attr_native_value
             if prev is not None and _is_zero_value(value) and not _is_zero_value(prev):
                 self._attr_last_reset = dt_util.utcnow()
-                _LOGGER.info("Energy counter reset detected for %s (previous=%s)", self, prev)
+                _LOGGER.warning("Energy counter reset detected for %s (previous=%s)", self, prev)
                 self._update_ha_state_now(value, update_source)
                 return
 
