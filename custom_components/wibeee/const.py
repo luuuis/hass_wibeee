@@ -33,4 +33,5 @@ NEST_ALL_UPSTREAMS: list[SelectOptionDict] = [SelectOptionDict(label='Local only
                                                  ('Iberdrola', 'http://datosmonitorconsumo.iberdrola.es:8080'),
                                                  ('Iberdrola', 'http://ingest-prod-iberdrola.wibeee.com:80'),
                                                  ('SolarProfit', 'http://wdata.solarprofit.es:8080'),
+                                                 ('Smilics', 'http://www.smilics.com:8080'),
                                              ])
