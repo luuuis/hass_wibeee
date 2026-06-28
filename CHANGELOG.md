@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.3](https://github.com/luuuis/hass_wibeee/compare/v4.3.2...v4.3.3) (2026-06-28)
+
+
+### Bug Fixes
+
+* use TOTAL state class for net energy sensors ([#187](https://github.com/luuuis/hass_wibeee/issues/187)) ([07c9396](https://github.com/luuuis/hass_wibeee/commit/07c939603fd9d907fa012c55a3207c88fa7d5a61))
+
 ## [4.3.2](https://github.com/luuuis/hass_wibeee/compare/v4.3.1...v4.3.2) (2026-06-28)
 
 
