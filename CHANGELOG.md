@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.2](https://github.com/luuuis/hass_wibeee/compare/v4.3.1...v4.3.2) (2026-06-28)
+
+
+### Features
+
+* add Smilics Cloud upstream ([#185](https://github.com/luuuis/hass_wibeee/issues/185)) ([247bc97](https://github.com/luuuis/hass_wibeee/commit/247bc975a5de88e950bd98bb37f8b401f940361d))
+
 ## [4.3.1](https://github.com/luuuis/hass_wibeee/compare/v4.3.0...v4.3.1) (2026-06-12)
 
 
