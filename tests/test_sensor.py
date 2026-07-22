@@ -6,7 +6,6 @@ import homeassistant.helpers.entity_registry as er
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry, entity_registry
-from homeassistant.helpers.entity_platform import EntityPlatform
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components import wibeee
@@ -17,8 +16,7 @@ from .test_helpers import build_values
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
-@patch.object(EntityPlatform, 'async_add_entities', wraps=EntityPlatform.async_add_entities, autospec=True)
-async def test_sensor_ids_and_names(spy_async_add_entities, mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
+async def test_sensor_ids_and_names(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
     devices_data = [
         [
             DeviceInfo('Wibeee', 'xxxxxx1paabb', '10.9.8', 'WBM', '1.2.3.4'),

@@ -45,7 +45,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback, CALLBACK_TYPE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.device_registry import DeviceEntry, DeviceRegistry
+from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.entity import DeviceInfo as HassDeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
@@ -271,8 +271,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         fetched_slots = {slot for v in fetched_values if v in known_poll_var_slots for _, slot in [known_poll_var_slots[v]]}
         non_clamp_slots = {s for s in fetched_slots if not s.value.is_clamp}
 
-        devices = {slot: _make_device_info(device, slot, via_device=device if non_clamp_slots and slot.value.is_clamp else None)
-                   for slot in fetched_slots}
+        devices = {slot: _make_device_info(device, slot) for slot in fetched_slots}
 
         return [
             WibeeeSensor(mac_addr, device, slot, sensor_type, throttle, fetched_values.get(poll_var))
@@ -288,7 +287,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
         # device | identifiers={(DOMAIN, f'{mac_addr}_L{sensor_phase}' if is_clamp else mac_addr)},
         reg_devices: dict[str, HassDeviceInfo] = {
-            device_id: _rehydrate_device_info(device_registry, d)
+            device_id: _rehydrate_device_info(d)
             for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id)
             if (ids := [i[1] for i in d.identifiers if i[0] == DOMAIN])
             for device_id in ids
@@ -325,6 +324,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     entry.async_on_unload(setup_repairs(hass, entry, sensors))
     entry.async_on_unload(await async_setup_local_push(hass, entry, mac_addr, sensors))
+
+    # Device registration (triggered by async_add_entities above) completes before this point
+    # because async_setup_local_push awaits I/O. Set via_device_id now using the registry ID
+    # rather than the deprecated DeviceInfo["via_device"] identifier tuple (deprecated HA 2026.8).
+    _link_clamp_devices_to_parent(hass, entry, mac_addr, sensors)
 
     _LOGGER.info(f"Setup completed for '{entry.unique_id}' (host={host}, mac_addr={mac_addr}, wibeee_id: {wibeee_id}, "
                  f"timeout={timeout}, throttle={throttle})")
@@ -420,7 +424,7 @@ class WibeeeSensor(SensorEntity):
             _LOGGER.debug("Updating from %s: %s", update_source, self)
 
 
-def _make_device_info(device: DeviceInfo, slot: Slot, via_device: DeviceInfo | None) -> HassDeviceInfo:
+def _make_device_info(device: DeviceInfo, slot: Slot) -> HassDeviceInfo:
     mac_addr = device.macAddr
     is_clamp = slot.value.is_clamp
 
@@ -429,11 +433,7 @@ def _make_device_info(device: DeviceInfo, slot: Slot, via_device: DeviceInfo | N
     device_model = KNOWN_MODELS.get(device.model, 'Wibeee Energy Meter')
 
     return HassDeviceInfo(
-        # identifiers and links
         identifiers={(DOMAIN, f'{mac_addr}_L{slot.value.unique_name_suffix}' if is_clamp else mac_addr)},
-        via_device=(DOMAIN, f'{via_device.macAddr}') if via_device else None,
-
-        # and now for the humans :)
         name=device_name,
         model=device_model if not is_clamp else f'{device_model} Clamp',
         manufacturer='Smilics',
@@ -446,15 +446,39 @@ def _make_configuration_url(ip_addr: str) -> str:
     return f"http://{ip_addr}/"
 
 
-def _rehydrate_device_info(device_registry: DeviceRegistry, d: DeviceEntry) -> HassDeviceInfo:
-    via_device_id = device_registry.async_get(d.via_device_id)
+def _rehydrate_device_info(d: DeviceEntry) -> HassDeviceInfo:
     return HassDeviceInfo(identifiers=d.identifiers,
-                          via_device=next(iter(via_device_id.identifiers)) if via_device_id else None,
                           name=d.name,
                           model=d.model,
                           manufacturer=d.manufacturer,
                           configuration_url=d.configuration_url,
                           sw_version=d.sw_version)
+
+
+@callback
+def _link_clamp_devices_to_parent(hass: HomeAssistant, entry: ConfigEntry, mac_addr: str, sensors: list) -> None:
+    """Set via_device_id on clamp devices to link them to their parent device.
+
+    Uses async_update_device with via_device_id (supported since HA 2026.2) rather than
+    the deprecated DeviceInfo["via_device"] identifier tuple (deprecated in HA 2026.8).
+    """
+    device_registry = dr.async_get(hass)
+    devices_by_id = {
+        id_value: d
+        for d in dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+        for domain, id_value in d.identifiers
+        if domain == DOMAIN
+    }
+
+    parent_device = devices_by_id.get(mac_addr)
+    if parent_device is None:
+        return
+
+    for sensor in sensors:
+        if sensor.slot.value.is_clamp:
+            clamp_id = f'{mac_addr}_L{sensor.slot.value.unique_name_suffix}'
+            if (clamp_device := devices_by_id.get(clamp_id)) and clamp_device.via_device_id != parent_device.id:
+                device_registry.async_update_device(clamp_device.id, via_device_id=parent_device.id)
 
 
 def _known_sensor_slots(make_key: Callable[[SensorType, Slot], T]) -> Mapping[T, tuple[SensorType, Slot]]:
