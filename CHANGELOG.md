@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.4](https://github.com/luuuis/hass_wibeee/compare/v4.3.3...v4.3.4) (2026-07-23)
+
+
+### Bug Fixes
+
+* replace deprecated DeviceInfo via_device with via_device_id (HA 2026.8) ([#189](https://github.com/luuuis/hass_wibeee/issues/189)) ([7166df7](https://github.com/luuuis/hass_wibeee/commit/7166df72f73f3cb7640723bbab6bce5551e3f5f2))
+
 ## [4.3.3](https://github.com/luuuis/hass_wibeee/compare/v4.3.2...v4.3.3) (2026-06-28)
 
 
