@@ -13,7 +13,7 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/luuuis/hass_wibeee/issues",
   "requirements": [
-    "xmltodict==1.0.4",
+    "xmltodict>=1.0.4",
     "lxml>=5.3.1,<7"
   ],
   "version": "4.3.4"
