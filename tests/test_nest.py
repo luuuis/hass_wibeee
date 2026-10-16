@@ -1,11 +1,14 @@
+import asyncio
 import time
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
 
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP
+
 from custom_components.wibeee.const import NEST_NULL_UPSTREAM
-from custom_components.wibeee.nest import create_application, DeviceConfig
+from custom_components.wibeee.nest import create_application, get_nest_proxy, DeviceConfig
 
 
 @pytest_asyncio.fixture
@@ -53,3 +56,41 @@ async def test_null_upstream_json(nest_fixture):
     response_timestamp = response[len(start):]
     assert float(response_timestamp) == pytest.approx(time.time(), abs=5)
     handle_push_data.assert_called_with(PUSH_DATA)
+
+
+async def test_proxy_retries_until_listening(hass, caplog):
+    """The proxy keeps retrying when there is no LAN address yet or binding fails, e.g. while booting."""
+    started = asyncio.Event()
+    binds = []
+    sleeps = []
+    real_sleep = asyncio.sleep
+
+    class FlakyTCPSite:
+        def __init__(self, runner, host, port):
+            binds.append((host, port))
+
+        async def start(self):
+            if len(binds) == 1:
+                raise OSError(99, 'Cannot assign requested address')
+            started.set()
+
+    async def fake_sleep(delay, *args, **kwargs):
+        if delay:
+            sleeps.append(delay)
+        await real_sleep(0)
+
+    source_ips = AsyncMock(side_effect=['127.0.0.1', '192.168.1.10', '192.168.1.10'])
+    with (
+        patch('custom_components.wibeee.nest.async_get_source_ip', source_ips),
+        patch('custom_components.wibeee.nest.web.TCPSite', FlakyTCPSite),
+        patch('asyncio.sleep', fake_sleep),
+    ):
+        await get_nest_proxy(hass)
+        await asyncio.wait_for(started.wait(), timeout=5)
+
+    assert binds == [('192.168.1.10', 8600), ('192.168.1.10', 8600)]
+    assert sleeps == [5, 10]
+    assert 'Wibeee Nest proxy listening on http://192.168.1.10:8600' in caplog.text
+
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
+    await hass.async_block_till_done()

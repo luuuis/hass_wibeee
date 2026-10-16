@@ -1,3 +1,5 @@
+import asyncio
+import ipaddress
 import json
 import logging
 import time
@@ -126,13 +128,38 @@ async def get_nest_proxy(hass: HomeAssistant, local_port=8600) -> NestProxy:
     access_log = logging.getLogger(f'{__name__}.access')
     access_log.setLevel(access_log.getEffectiveLevel() + 10)
 
-    # don't listen on public IP
-    local_ip = await async_get_source_ip(hass, target_ip=PUBLIC_TARGET_IP)
-
     nest_proxy = NestProxy()
-    app = create_application(lambda mac_addr: nest_proxy.get_device_info(mac_addr))
-    server = hass.loop.create_task(web._run_app(app, host=local_ip, port=local_port, access_log=access_log))
-    LOGGER.info('Wibeee Nest proxy listening on http://%s:%d', local_ip, local_port)
+
+    async def serve() -> None:
+        # keep retrying until we are listening: at boot the network may not be ready yet, and since this
+        # proxy is a singleton nothing else would ever start it again (the Wibeee can't push in the meantime).
+        delay = 5
+        while True:
+            runner = None
+            try:
+                # don't listen on public IP
+                local_ip = await async_get_source_ip(hass, target_ip=PUBLIC_TARGET_IP)
+                if ipaddress.ip_address(local_ip).is_loopback:
+                    raise OSError(f'no LAN address available yet (got {local_ip})')
+
+                app = create_application(lambda mac_addr: nest_proxy.get_device_info(mac_addr))
+                runner = web.AppRunner(app, access_log=access_log)
+                await runner.setup()
+                await web.TCPSite(runner, local_ip, local_port).start()
+                LOGGER.info('Wibeee Nest proxy listening on http://%s:%d', local_ip, local_port)
+                await asyncio.Event().wait()  # serve until cancelled
+
+            except Exception as e:
+                LOGGER.warning('Wibeee Nest proxy could not listen on port %d, retrying in %ds: %s', local_port, delay, e)
+
+            finally:
+                if runner is not None:
+                    await runner.cleanup()
+
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 60)
+
+    server = hass.loop.create_task(serve())
 
     @callback
     def shutdown_proxy(ev: Event) -> None:
