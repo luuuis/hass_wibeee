@@ -7,7 +7,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* retry starting the local push proxy if it can't listen ([7f0fad8](https://github.com/luuuis/hass_wibeee/commit/7f0fad800981430564c3441f478cac3ab6ddd15e))
 * retry starting the local push proxy if it can't listen ([#194](https://github.com/luuuis/hass_wibeee/issues/194)) ([7f0fad8](https://github.com/luuuis/hass_wibeee/commit/7f0fad800981430564c3441f478cac3ab6ddd15e))
 
 ## [4.3.4](https://github.com/luuuis/hass_wibeee/compare/v4.3.3...v4.3.4) (2026-07-23)
