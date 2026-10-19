@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.5](https://github.com/luuuis/hass_wibeee/compare/v4.3.4...v4.3.5) (2026-10-19)
+
+
+### Bug Fixes
+
+* retry starting the local push proxy if it can't listen ([#194](https://github.com/luuuis/hass_wibeee/issues/194)) ([7f0fad8](https://github.com/luuuis/hass_wibeee/commit/7f0fad800981430564c3441f478cac3ab6ddd15e))
+
 ## [4.3.4](https://github.com/luuuis/hass_wibeee/compare/v4.3.3...v4.3.4) (2026-07-23)
 
 
