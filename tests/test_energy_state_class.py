@@ -328,12 +328,12 @@ async def test_energy_sensor_reset_after_idle_period(mock_fetch_device_info, moc
     assert state.attributes.get('last_reset') is not None
 
 
-@pytest.mark.parametrize("interruption,first_value_is_reset", [('unavailable', True), ('restart', False)])
+@pytest.mark.parametrize("interruption,first_value_is_reset", [('unavailable', True), ('restart', True)])
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 async def test_energy_sensor_reset_after_interruption(mock_fetch_device_info, mock_fetch_values, hass: HomeAssistant,
                                                       interruption, first_value_is_reset):
-    """The first value after being unavailable is compared with the last value before it, but not after a restart."""
+    """The first value after being unavailable or a restart is compared with the last value before it."""
     dev, entry = await _setup_energy_sensor(hass)
     mock_fetch_device_info.return_value = dev
     mock_fetch_values.return_value = build_values(dev, {'eac1': '-100000'})

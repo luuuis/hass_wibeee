@@ -22,8 +22,8 @@ import homeassistant.util.dt as dt_util
 import voluptuous as vol
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
+    RestoreSensor,
     SensorDeviceClass,
-    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import (ConfigEntry, SOURCE_IMPORT)
@@ -395,7 +395,7 @@ def _is_counter_reset(prev: StateType, value: StateType, elapsed: timedelta) -> 
     return abs(value_wh - prev_wh) > MAX_POWER_KW * 1000 * (elapsed / timedelta(hours=1))
 
 
-class WibeeeSensor(SensorEntity):
+class WibeeeSensor(RestoreSensor):
     """Implementation of Wibeee sensor."""
 
     def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot: Slot, sensor_type: SensorType, throttle: timedelta,
@@ -421,6 +421,12 @@ class WibeeeSensor(SensorEntity):
             self._update_ha_state = util.Throttle(throttle)(self._update_ha_state_now)
         else:
             self._update_ha_state = self._update_ha_state_now
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if self.sensor_type.device_class in ENERGY_CLASSES and self._last_value is None:
+            if (last_state := await self.async_get_last_state()) and (last_data := await self.async_get_last_sensor_data()):
+                self._last_value, self._last_value_at = last_data.native_value, last_state.last_updated
 
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:
