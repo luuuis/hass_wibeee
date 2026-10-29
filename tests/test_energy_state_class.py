@@ -283,6 +283,29 @@ async def test_energy_sensor_counter_step_between_frequent_pushes(mock_fetch_dev
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
+async def test_energy_sensor_clock_step_back(mock_fetch_device_info, mock_fetch_values, hass: HomeAssistant):
+    """A small drop on a net energy counter is not a reset when the clock steps backwards between pushes."""
+    dev, entry = await _setup_energy_sensor(hass)
+    mock_fetch_device_info.return_value = dev
+    mock_fetch_values.return_value = build_values(dev, {'eac1': '-5000'})
+
+    with freeze_time("2025-06-28 10:00:00") as frozen_time:
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        energy_sensor = hass.data['sensor'].get_entity('sensor.test_device_ddeeff_l1_active_energy')
+        energy_sensor.update_value('-4850')
+        frozen_time.tick(timedelta(minutes=-2))
+        energy_sensor.update_value('-4849')
+        await hass.async_block_till_done()
+
+    state = hass.states.get('sensor.test_device_ddeeff_l1_active_energy')
+    assert state.state == '-4849'
+    assert state.attributes.get('last_reset') is None
+
+
+@patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
+@patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
 async def test_energy_sensor_reset_after_idle_period(mock_fetch_device_info, mock_fetch_values, hass: HomeAssistant):
     """A counter that has not changed for hours is still reset by a small non-zero value."""
     dev, entry = await _setup_energy_sensor(hass)

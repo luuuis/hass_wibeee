@@ -430,7 +430,7 @@ class WibeeeSensor(SensorEntity):
             now = dt_util.utcnow()
             if value is not STATE_UNAVAILABLE:
                 self._last_value, self._last_value_at = value, now
-            if _is_counter_reset(prev, value, now - prev_at + ENERGY_COUNTER_INTERVAL):
+            if _is_counter_reset(prev, value, max(now - prev_at, timedelta(0)) + ENERGY_COUNTER_INTERVAL):
                 self._attr_last_reset = now
                 _LOGGER.warning("Energy counter reset detected for %s (previous=%s)", self, prev)
                 self._update_ha_state_now(value, update_source)
