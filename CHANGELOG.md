@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.6](https://github.com/luuuis/hass_wibeee/compare/v4.3.5...v4.3.6) (2026-11-12)
+
+
+### Bug Fixes
+
+* update device cache after IP changes ([#199](https://github.com/luuuis/hass_wibeee/issues/199)) ([f1f88c3](https://github.com/luuuis/hass_wibeee/commit/f1f88c3ddba4e246ea96b70e3ee4f3a82641659b))
+
 ## [4.3.5](https://github.com/luuuis/hass_wibeee/compare/v4.3.4...v4.3.5) (2026-10-19)
 
 
