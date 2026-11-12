@@ -229,7 +229,7 @@ async def _setup_update_devices_local_push(hass: HomeAssistant, entry: ConfigEnt
             d_entry = update_devices[d_id]
             if d_entry.configuration_url != configuration_url:
                 updated = device_registry.async_update_device(d_id, configuration_url=configuration_url)
-                update_devices.update(d_id=updated)
+                update_devices[d_id] = updated
                 _LOGGER.info(
                     'Updated %s (device_id=%s) with configuration_url=%s (was: %s)',
                     d_entry.identifiers,
