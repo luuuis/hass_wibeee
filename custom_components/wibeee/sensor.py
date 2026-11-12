@@ -22,8 +22,8 @@ import homeassistant.util.dt as dt_util
 import voluptuous as vol
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
+    RestoreSensor,
     SensorDeviceClass,
-    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import (ConfigEntry, SOURCE_IMPORT)
@@ -76,6 +76,9 @@ T = TypeVar('T')
 ENERGY_VOLT_AMPERE_REACTIVE_HOUR = 'varh'
 
 ENERGY_CLASSES = [SensorDeviceClass.ENERGY, ENERGY_VOLT_AMPERE_REACTIVE_HOUR]
+
+MAX_POWER_KW = 100
+ENERGY_COUNTER_INTERVAL = timedelta(minutes=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -377,7 +380,22 @@ def _is_zero_value(value: StateType) -> bool:
         return False
 
 
-class WibeeeSensor(SensorEntity):
+def _is_counter_reset(prev: StateType, value: StateType, elapsed: timedelta) -> bool:
+    try:
+        prev_wh, value_wh = float(prev), float(value)
+    except (TypeError, ValueError):
+        return False
+
+    if abs(value_wh) >= abs(prev_wh):
+        return False
+
+    if _is_zero_value(value):
+        return True
+
+    return abs(value_wh - prev_wh) > MAX_POWER_KW * 1000 * (elapsed / timedelta(hours=1))
+
+
+class WibeeeSensor(RestoreSensor):
     """Implementation of Wibeee sensor."""
 
     def __init__(self, mac_addr: str, device_info: HassDeviceInfo, slot: Slot, sensor_type: SensorType, throttle: timedelta,
@@ -397,18 +415,29 @@ class WibeeeSensor(SensorEntity):
         self.slot = slot
         self.nest_push_param = f"{sensor_type.push_var_prefix}{slot.value.push_var_suffix}"
         self.sensor_type = sensor_type
+        self._last_value = initial_value
+        self._last_value_at = dt_util.utcnow()
         if throttle.total_seconds() > 0:
             self._update_ha_state = util.Throttle(throttle)(self._update_ha_state_now)
         else:
             self._update_ha_state = self._update_ha_state_now
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if self.sensor_type.device_class in ENERGY_CLASSES and self._last_value is None:
+            if (last_state := await self.async_get_last_state()) and (last_data := await self.async_get_last_sensor_data()):
+                self._last_value, self._last_value_at = last_data.native_value, last_state.last_updated
+
     @callback
     def update_value(self, value: StateType, update_source: str = '') -> None:
         """Updates this sensor from the fetched status value."""
-        if self.sensor_type.device_class in ENERGY_CLASSES and value is not STATE_UNAVAILABLE:
-            prev = self._attr_native_value
-            if prev is not None and _is_zero_value(value) and not _is_zero_value(prev):
-                self._attr_last_reset = dt_util.utcnow()
+        if self.sensor_type.device_class in ENERGY_CLASSES:
+            prev, prev_at = self._last_value, self._last_value_at
+            now = dt_util.utcnow()
+            if value is not STATE_UNAVAILABLE:
+                self._last_value, self._last_value_at = value, now
+            if _is_counter_reset(prev, value, max(now - prev_at, timedelta(0)) + ENERGY_COUNTER_INTERVAL):
+                self._attr_last_reset = now
                 _LOGGER.warning("Energy counter reset detected for %s (previous=%s)", self, prev)
                 self._update_ha_state_now(value, update_source)
                 return
