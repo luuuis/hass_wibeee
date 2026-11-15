@@ -62,6 +62,33 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "IgnacioHR",
+      "name": "Ignacio Hernandez-Ros",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16385090?v=4",
+      "profile": "https://www.reportingstandard.com/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "edurenye",
+      "name": "Eduard Reñé Claramunt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6824576?v=4",
+      "profile": "https://github.com/edurenye",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "misa1515",
+      "name": "misa1515",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61636045?v=4",
+      "profile": "https://github.com/misa1515",
+      "contributions": [
+        "translation"
+      ]
     }
   ],
   "repoType": "github"

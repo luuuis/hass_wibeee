@@ -134,6 +134,11 @@ In the integration's configuration under `Cloud service to upload data to` selec
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/alnavasa"><img src="https://avatars.githubusercontent.com/u/458370?v=4?s=100" width="100px;" alt="Alnavasa"/><br /><sub><b>Alnavasa</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=alnavasa" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/isaacrushworth2002"><img src="https://avatars.githubusercontent.com/u/140648036?v=4?s=100" width="100px;" alt="Isaac Rushworth"/><br /><sub><b>Isaac Rushworth</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=isaacrushworth2002" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ast3citos"><img src="https://avatars.githubusercontent.com/u/26896272?v=4?s=100" width="100px;" alt="Daniel M."/><br /><sub><b>Daniel M.</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=ast3citos" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.reportingstandard.com/"><img src="https://avatars.githubusercontent.com/u/16385090?v=4?s=100" width="100px;" alt="Ignacio Hernandez-Ros"/><br /><sub><b>Ignacio Hernandez-Ros</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=IgnacioHR" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/edurenye"><img src="https://avatars.githubusercontent.com/u/6824576?v=4?s=100" width="100px;" alt="Eduard Reñé Claramunt"/><br /><sub><b>Eduard Reñé Claramunt</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=edurenye" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/misa1515"><img src="https://avatars.githubusercontent.com/u/61636045?v=4?s=100" width="100px;" alt="misa1515"/><br /><sub><b>misa1515</b></sub></a><br /><a href="#translation-misa1515" title="Translation">🌍</a></td>
     </tr>
   </tbody>
 </table>
