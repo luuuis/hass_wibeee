@@ -4,9 +4,29 @@
   "files": [
     "README.md"
   ],
-  "badgeTemplate": "[![All Contributors](https://img.shields.io/github/all-contributors/<%= projectOwner %>/<%= projectName %>?color=ee8449&style=for-the-badge)](#contributors)",
+  "badgeTemplate": "[![All Contributors](https://img.shields.io/github/all-contributors/luuuis/hass_wibeee?color=ee8449&style=for-the-badge)](#contributors)",
   "commitType": "docs",
   "commitConvention": "angular",
   "contributorsPerLine": 7,
-  "contributors": []
+  "contributors": [
+    {
+      "login": "juanjoSanz",
+      "name": "juanjoSanz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1581524?v=4",
+      "profile": "https://github.com/juanjoSanz",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "abacao",
+      "name": "André Bação",
+      "avatar_url": "https://avatars.githubusercontent.com/u/17479246?v=4",
+      "profile": "http://blog.bacao.pt/",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "repoType": "github"
 }
