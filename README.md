@@ -1,4 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-yellow.svg?style=for-the-badge)](https://github.com/custom-components/hacs) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/luuuis/hass_wibeee?label=Latest%20release&style=for-the-badge)](https://github.com/luuuis/hass_wibeee/releases) [![GitHub all releases](https://img.shields.io/github/downloads/luuuis/hass_wibeee/total?style=for-the-badge)](https://github.com/luuuis/hass_wibeee/releases)
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=for-the-badge)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # Home Assistant: Wibeee (and Mirubee) energy monitor custom component
 
@@ -115,3 +118,15 @@ In the integration's configuration under `Cloud service to upload data to` selec
 
 <img width="400" alt="Wibeee integration options flow" src="https://github.com/user-attachments/assets/de6554ab-3b6a-426a-b244-21f714cf8ed0" />
 <img width="400" alt="Wibeee integration cloud service dropdown" src="https://github.com/user-attachments/assets/a8a990ba-efcd-4ef8-97ed-670a6a5ee230" />
+
+
+# Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
