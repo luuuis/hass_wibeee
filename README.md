@@ -128,9 +128,10 @@ In the integration's configuration under `Cloud service to upload data to` selec
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luuuis"><img src="https://avatars.githubusercontent.com/u/161006?v=4?s=100" width="100px;" alt="Luis Miranda"/><br /><sub><b>Luis Miranda</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=luuuis" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/juanjoSanz"><img src="https://avatars.githubusercontent.com/u/1581524?v=4?s=100" width="100px;" alt="juanjoSanz"/><br /><sub><b>juanjoSanz</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=juanjoSanz" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://blog.bacao.pt/"><img src="https://avatars.githubusercontent.com/u/17479246?v=4?s=100" width="100px;" alt="André Bação"/><br /><sub><b>André Bação</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=abacao" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luuuis"><img src="https://avatars.githubusercontent.com/u/161006?v=4&size=100" width="100px" height="100px" alt="Luis Miranda"/><br /><sub><b>Luis Miranda</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=luuuis" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/juanjoSanz"><img src="https://avatars.githubusercontent.com/u/1581524?v=4&size=100" width="100px" height="100px" alt="juanjoSanz"/><br /><sub><b>juanjoSanz</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=juanjoSanz" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://blog.bacao.pt/"><img src="https://avatars.githubusercontent.com/u/17479246?v=4&size=100" width="100px" height="100px" alt="André Bação"/><br /><sub><b>André Bação</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=abacao" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/alnavasa"><img src="https://avatars.githubusercontent.com/u/458370?v=4&size=100" width="100px" height="100px" alt="Alnavasa"/><br /><sub><b>Alnavasa</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=alnavasa" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
