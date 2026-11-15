@@ -18,7 +18,8 @@
         "code"
       ]
     },
-    { "login": "juanjoSanz",
+    {
+      "login": "juanjoSanz",
       "name": "juanjoSanz",
       "avatar_url": "https://avatars.githubusercontent.com/u/1581524?v=4",
       "profile": "https://github.com/juanjoSanz",
@@ -33,6 +34,60 @@
       "profile": "http://blog.bacao.pt/",
       "contributions": [
         "code"
+      ]
+    },
+    {
+      "login": "alnavasa",
+      "name": "Alnavasa",
+      "avatar_url": "https://avatars.githubusercontent.com/u/458370?v=4",
+      "profile": "https://github.com/alnavasa",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "isaacrushworth2002",
+      "name": "Isaac Rushworth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/140648036?v=4",
+      "profile": "https://github.com/isaacrushworth2002",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ast3citos",
+      "name": "Daniel M.",
+      "avatar_url": "https://avatars.githubusercontent.com/u/26896272?v=4",
+      "profile": "https://github.com/ast3citos",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "IgnacioHR",
+      "name": "Ignacio Hernandez-Ros",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16385090?v=4",
+      "profile": "https://www.reportingstandard.com/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "edurenye",
+      "name": "Eduard Reñé Claramunt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6824576?v=4",
+      "profile": "https://github.com/edurenye",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "misa1515",
+      "name": "misa1515",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61636045?v=4",
+      "profile": "https://github.com/misa1515",
+      "contributions": [
+        "translation"
       ]
     }
   ],
