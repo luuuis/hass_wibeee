@@ -1,6 +1,6 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-yellow.svg?style=for-the-badge)](https://github.com/custom-components/hacs) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/luuuis/hass_wibeee?label=Latest%20release&style=for-the-badge)](https://github.com/luuuis/hass_wibeee/releases) [![GitHub all releases](https://img.shields.io/github/downloads/luuuis/hass_wibeee/total?style=for-the-badge)](https://github.com/luuuis/hass_wibeee/releases)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=for-the-badge)](#contributors-)
+[![All Contributors](https://img.shields.io/github/all-contributors/luuuis/hass_wibeee?color=ee8449&style=for-the-badge)](#contributors)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # Home Assistant: Wibeee (and Mirubee) energy monitor custom component
@@ -128,7 +128,9 @@ In the integration's configuration under `Cloud service to upload data to` selec
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luuuis"><img src="https://avatars.githubusercontent.com/u/161006?v=4&size=100" width="100px" height="100px" alt="Luis Miranda"/><br /><sub><b>Luis Miranda</b></sub></a><br /><a href="#code-luuuis" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/luuuis"><img src="https://avatars.githubusercontent.com/u/161006?v=4?s=100" width="100px;" alt="Luis Miranda"/><br /><sub><b>Luis Miranda</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=luuuis" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/juanjoSanz"><img src="https://avatars.githubusercontent.com/u/1581524?v=4?s=100" width="100px;" alt="juanjoSanz"/><br /><sub><b>juanjoSanz</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=juanjoSanz" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://blog.bacao.pt/"><img src="https://avatars.githubusercontent.com/u/17479246?v=4?s=100" width="100px;" alt="André Bação"/><br /><sub><b>André Bação</b></sub></a><br /><a href="https://github.com/luuuis/hass_wibeee/commits?author=abacao" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
