@@ -121,3 +121,5 @@ In the integration's configuration under `Cloud service to upload data to` selec
 
 
 # Contributors
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
