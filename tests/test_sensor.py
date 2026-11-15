@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 from unittest.mock import patch
 
+import pytest
 import homeassistant.helpers.entity_registry as er
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -187,7 +188,14 @@ async def test_known_sensors(mock_async_fetch_device_info, mock_async_fetch_valu
 
 @patch.object(WibeeeAPI, 'async_fetch_values', autospec=True)
 @patch.object(WibeeeAPI, 'async_fetch_device_info', autospec=True)
-async def test_device_configuration_url(mock_async_fetch_device_info, mock_async_fetch_values, hass: HomeAssistant):
+@pytest.mark.parametrize('ip_updates', [
+    pytest.param([('1.2.3.4', 0)], id='unchanged'),
+    pytest.param([('4.3.2.1', 1)], id='changed'),
+    pytest.param([('4.3.2.1', 1), ('4.3.2.1', 1)], id='repeated'),
+    pytest.param([('4.3.2.1', 1), ('1.2.3.4', 2)], id='return-to-original'),
+])
+async def test_device_configuration_url(mock_async_fetch_device_info, mock_async_fetch_values,
+                                        hass: HomeAssistant, ip_updates):
     dev = DeviceInfo('ozymandias', 'abcdabcdabcd', '100.1', 'WBB', '1.2.3.4')
     mock_async_fetch_device_info.return_value = dev
     mock_async_fetch_values.return_value = build_values(dev, {})
@@ -206,11 +214,18 @@ async def test_device_configuration_url(mock_async_fetch_device_info, mock_async
 
     assert_configuration_url('http://1.2.3.4/')
 
-    on_data_pushed({'ip': '4.3.2.1'})
-    on_data_pushed(dict(foo='bar'))
-    await hass.async_block_till_done()
+    registry = device_registry.async_get(hass)
+    with patch.object(registry, 'async_update_device', wraps=registry.async_update_device) as update_device:
+        for ip_addr, expected_calls in ip_updates:
+            on_data_pushed({'ip': ip_addr})
+            await hass.async_block_till_done()
 
-    assert_configuration_url('http://4.3.2.1/')
+            assert_configuration_url(f'http://{ip_addr}/')
+            assert update_device.call_count == expected_calls
+
+        on_data_pushed(dict(foo='bar'))
+        await hass.async_block_till_done()
+        assert update_device.call_count == expected_calls
 
 
 def async_devices_for_config_entry(hass: HomeAssistant, entry: ConfigEntry):
