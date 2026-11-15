@@ -77,7 +77,14 @@ ENERGY_VOLT_AMPERE_REACTIVE_HOUR = 'varh'
 
 ENERGY_CLASSES = [SensorDeviceClass.ENERGY, ENERGY_VOLT_AMPERE_REACTIVE_HOUR]
 
+# Maximum plausible instantaneous power for a Wibeee installation (residential/small commercial).
+# A drop larger than this constant could produce in the elapsed time is treated as a counter reset.
 MAX_POWER_KW = 100
+# Wibeee energy counters step approximately once per minute while pushes arrive every few seconds.
+# A net counter moving towards zero decreases in absolute value, so it falls through to the
+# threshold check. Without this buffer, a legitimate step that accumulated over a full minute
+# but arrived only seconds after the previous push would exceed the per-time threshold and
+# trigger a false reset.
 ENERGY_COUNTER_INTERVAL = timedelta(minutes=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
