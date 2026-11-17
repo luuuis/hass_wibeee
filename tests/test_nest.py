@@ -58,6 +58,17 @@ async def test_null_upstream_json(nest_fixture):
     handle_push_data.assert_called_with(PUSH_DATA)
 
 
+async def test_get_without_mac_is_ignored(aiohttp_client, socket_enabled):
+    """A request without a device identity must not update sensors."""
+    handle_push_data = MagicMock()
+    devices = {PUSH_DATA['mac']: DeviceConfig(handle_push_data, NEST_NULL_UPSTREAM)}
+    client = await aiohttp_client(create_application(devices.get))
+
+    res = await client.get('/Wibeee/receiver', params={'v1': '230'})
+    assert res.status == 404
+    handle_push_data.assert_not_called()
+
+
 async def test_proxy_retries_until_listening(hass, caplog):
     """The proxy keeps retrying when there is no LAN address yet or binding fails, e.g. while booting."""
     started = asyncio.Event()

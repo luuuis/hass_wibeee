@@ -173,7 +173,7 @@ async def get_nest_proxy(hass: HomeAssistant, local_port=8600) -> NestProxy:
 async def extract_query_params(req: web.Request) -> DecodedRequest:
     """Extracts Wibeee data from query params."""
     query = {k: v for k, v in parse_qsl(req.query_string)}
-    return DecodedRequest(query['mac'], query, await req.text() if req.can_read_body else None)
+    return DecodedRequest(query.get('mac'), query, await req.text() if req.can_read_body else None)
 
 
 async def extract_json_body(req: web.Request) -> DecodedRequest:
