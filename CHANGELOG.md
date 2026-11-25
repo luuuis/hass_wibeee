@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.7](https://github.com/luuuis/hass_wibeee/compare/v4.3.6...v4.3.7) (2026-11-25)
+
+
+### Bug Fixes
+
+* reject local push GET requests without a MAC ([#206](https://github.com/luuuis/hass_wibeee/issues/206)) ([d583b3f](https://github.com/luuuis/hass_wibeee/commit/d583b3f20f9f078e153a7482048f8f5d408e7845))
+
+
+### Documentation
+
+* add past contributors for code ([#204](https://github.com/luuuis/hass_wibeee/issues/204)) ([8614fb9](https://github.com/luuuis/hass_wibeee/commit/8614fb9aa73fcc2f29d432c6523e8c7d6eb3fc30))
+
 ## [4.3.6](https://github.com/luuuis/hass_wibeee/compare/v4.3.5...v4.3.6) (2026-11-15)
 
 
