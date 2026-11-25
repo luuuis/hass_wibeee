@@ -34,7 +34,7 @@ devices there is an additional device and set of sensors containing the total re
 | `wibeee_<mac_addr>_l1_power_factor`               |  PF  | Power Factor               |
 | `wibeee_<mac_addr>_l1_phase_voltage`              |  V   | Phase Voltage              |
 
-
+<!-- ha-marketplace:exclude-start -->
 ## Installation
 
 Use [HACS](https://hacs.xyz) (preferred) or follow the manual instructions below.
@@ -58,6 +58,7 @@ Use [HACS](https://hacs.xyz) (preferred) or follow the manual instructions below
 3. Restart Home Assistant
 
 </details>
+<!-- ha-marketplace:exclude-end -->
 
 # Configuration
 
@@ -120,6 +121,7 @@ In the integration's configuration under `Cloud service to upload data to` selec
 <img width="400" alt="Wibeee integration cloud service dropdown" src="https://github.com/user-attachments/assets/a8a990ba-efcd-4ef8-97ed-670a6a5ee230" />
 
 
+<!-- ha-marketplace:exclude-start -->
 # Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -145,5 +147,7 @@ In the integration's configuration under `Cloud service to upload data to` selec
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
+<!-- ha-marketplace:exclude-end -->
+
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
